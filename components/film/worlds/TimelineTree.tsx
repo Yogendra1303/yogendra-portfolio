@@ -48,6 +48,26 @@ const frag = /* glsl */ `
     gl_FragColor = vec4(col * a, a);
   }
 `;
+/** The hero timelines: nine thick strands, one per chapter of the arc. */
+const heroVert = /* glsl */ `
+  varying float vT;
+  void main() { vT = uv.x * 0.62; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
+`;
+const heroFrag = /* glsl */ `
+  uniform float uTime; uniform float uOn; uniform float uGrow;
+  varying float vT;
+  void main() {
+    if (vT > uGrow) discard;
+    // From black and burnt orange out in the chaos to living green at the centre.
+    vec3 c = mix(vec3(0.08, 0.03, 0.01), vec3(0.85, 0.35, 0.08), smoothstep(0.0, 0.12, vT));
+    c = mix(c, vec3(0.35, 1.0, 0.6), smoothstep(0.14, 0.4, vT));
+    float surge = pow(fract(vT * 3.0 - uTime * 0.6), 20.0) * 2.0;
+    float head = exp(-(uGrow - vT) * 30.0) * 2.0;
+    float a = (0.9 + surge + head) * uOn;
+    gl_FragColor = vec4(c * a, clamp(a, 0.0, 1.0));
+  }
+`;
+
 const emberVert = /* glsl */ `
   attribute float aT; attribute float aSeed;
   uniform float uGrow; uniform float uTime; uniform float uOn;
@@ -153,8 +173,24 @@ function buildTree() {
   return { g, e };
 }
 
+function buildHeroes() {
+  const r = prng(909);
+  const BASE = new THREE.Vector3(0, -7, 0);
+  return Array.from({ length: 9 }, (_, i) => {
+    // From the edges of the frame (wide, low, and out to the sides), into one point, then up the trunk.
+    const a = (i / 9) * Math.PI * 2 + 0.3;
+    const far = new THREE.Vector3(Math.cos(a) * 34, -14 + Math.sin(a * 2) * 9 + r() * 4, Math.sin(a) * 30);
+    const mid = far.clone().multiplyScalar(0.4).add(new THREE.Vector3(0, -3, 0));
+    const pts = [far, mid, BASE.clone().add(new THREE.Vector3(Math.cos(a) * 0.3, 0, Math.sin(a) * 0.3))];
+    for (let k = 1; k <= 6; k++) pts.push(new THREE.Vector3(Math.cos(a + k * 0.5) * 0.45, BASE.y + k * 1.6, Math.sin(a + k * 0.5) * 0.45));
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 160, 0.05, 6, false);
+  });
+}
+
 export function TimelineTree() {
   const { g, e } = useMemo(buildTree, []);
+  const heroes = useMemo(buildHeroes, []);
+  const heroMat = useRef<(THREE.ShaderMaterial | null)[]>([]);
   const group = useRef<THREE.Group>(null);
   const lineMat = useRef<THREE.ShaderMaterial>(null);
   const emberMat = useRef<THREE.ShaderMaterial>(null);
@@ -172,7 +208,7 @@ export function TimelineTree() {
     uniforms.uOn.value = on;
     uniforms.uTime.value += dt; // wall clock: time has stopped here, light has not
     // Write through the materials themselves (they may hold their own uniform objects).
-    for (const m of [lineMat.current, emberMat.current]) {
+    for (const m of [lineMat.current, emberMat.current, ...heroMat.current]) {
       if (!m) continue;
       m.uniforms.uGrow.value = uniforms.uGrow.value;
       m.uniforms.uOn.value = uniforms.uOn.value;
@@ -184,6 +220,11 @@ export function TimelineTree() {
       <lineSegments geometry={g} frustumCulled={false}>
         <shaderMaterial ref={lineMat} vertexShader={vert} fragmentShader={frag} uniforms={uniforms} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
       </lineSegments>
+      {heroes.map((hg, k) => (
+        <mesh key={k} geometry={hg} frustumCulled={false}>
+          <shaderMaterial ref={(m) => { heroMat.current[k] = m; }} vertexShader={heroVert} fragmentShader={heroFrag} uniforms={{ uTime: { value: 0 }, uGrow: { value: 0 }, uOn: { value: 0 } }} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
+        </mesh>
+      ))}
       <points geometry={e} frustumCulled={false}>
         <shaderMaterial ref={emberMat} vertexShader={emberVert} fragmentShader={emberFrag} uniforms={uniforms} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
       </points>
