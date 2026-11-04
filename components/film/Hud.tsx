@@ -142,7 +142,11 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
           // Centred on the hole, and pulled into it.
           const cy = num.offsetTop + num.offsetHeight / 2;
           year.current.style.transform = `translate3d(${((film.bhX - 0.5) * W).toFixed(1)}px, ${(film.bhY * H - cy).toFixed(1)}px, 0)`;
+          // No transform on the number itself: it would become the digits' offsetParent and skew the measurements.
+          num.style.transform = "";
           num.style.opacity = "1";
+          // A dark halo keeps the digits legible against the bright side of the disk.
+          if (yearMode !== 1) num.style.textShadow = "0 0 14px rgba(0,0,0,0.75), 0 0 36px rgba(0,0,0,0.4)";
           const R = film.bhR * H * 0.5;
           const avail = Math.min(film.bhX, 1 - film.bhX) * W - 0.06 * W;
           const cx = num.offsetLeft + num.offsetWidth / 2;
@@ -162,7 +166,6 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
           const clear = R * 1.75;
           const fit = Math.max(0.55, Math.min(1, (avail - clear) / Math.max(1, xmax + dw - gap)));
           const push = Math.max(0, Math.min(clear / fit - gap, avail / fit - xmax - dw));
-          num.style.transform = fit < 1 ? `scale(${fit.toFixed(3)})` : "";
           for (const d of digits.current) {
             if (!d) continue;
             const x = d.offsetLeft + d.offsetWidth / 2 - cx;
@@ -172,9 +175,9 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
             // Spiralling in: closer, smaller, stretched along the pull, gone at the centre.
             const r = (Math.abs(x) + push * (1 - k)) * Math.pow(1 - k, 1.3);
             const a = side + 1.9 * k;
-            const tx = Math.cos(a) * r - x;
-            const ty = Math.sin(a) * r;
-            const sc = 1 - 0.8 * k;
+            const tx = fit * Math.cos(a) * r - x;
+            const ty = fit * Math.sin(a) * r;
+            const sc = (1 - 0.8 * k) * fit;
             d.style.transform = `translate3d(${tx.toFixed(1)}px, ${ty.toFixed(1)}px, 0) rotate(${(a - side).toFixed(3)}rad) scale(${((1 + 1.8 * k) * sc).toFixed(3)}, ${((1 - 0.75 * k) * sc).toFixed(3)})`;
             d.style.opacity = String(1 - clamp01((k - 0.4) / 0.5));
           }
@@ -186,6 +189,7 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
           next.style.opacity = String(1 - pn);
         } else {
           if (yearMode === 1) {
+            num.style.textShadow = "";
             year.current.style.transform = "";
             for (const d of digits.current) if (d) d.style.transform = d.style.opacity = "";
           }
