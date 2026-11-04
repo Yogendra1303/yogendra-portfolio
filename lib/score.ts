@@ -297,6 +297,23 @@ function resolve() {
   });
 }
 
+/** A soft glass tick as a moment passes in the tesseract. */
+export function scoreTick() {
+  if (!on || !ctx || ctx.state !== "running") return;
+  const c = ctx;
+  const t = c.currentTime + 0.01;
+  const o = c.createOscillator();
+  o.frequency.value = 1568 + rnd() * 400;
+  const g = gain(c, 0);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.05, t + 0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+  o.connect(g).connect(verb);
+  g.connect(mix);
+  o.start(t);
+  o.stop(t + 1);
+}
+
 /** Call from the click that turns sound on (browsers need a gesture). */
 export function startScore() {
   on = true;

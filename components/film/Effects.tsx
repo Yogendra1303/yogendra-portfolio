@@ -358,6 +358,14 @@ export function Effects() {
         mz = film.crisis;
       }
     }
+    // The climax: crossing into the enterprise era is an event horizon. The
+    // whole frame bends around a dark centre before it shatters through.
+    const horizon = film.reduced || film.u > 5.5 ? 0 : film.fracture;
+    if (mz < 0.02 && horizon > 0.02) {
+      mass.x = 0.5;
+      mass.y = 0.5;
+      mz = Math.min(1.4, horizon * 1.4);
+    }
     mass.z = mz;
     su.uSeed.value = calm ? (film.clock * 13.7) % 97 : 0;
     (su.uTint.value as THREE.Color).copy(light.tint);

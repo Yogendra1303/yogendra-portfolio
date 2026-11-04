@@ -89,20 +89,23 @@ export function Lattice() {
   const uniforms = useMemo(() => ({ uOn: { value: 0 }, uTime: { value: 0 }, uCol: { value: new THREE.Color("#8fb8ff") }, uFar: { value: HALF * 1.1 } }), []);
 
   useFrame(({ camera }) => {
-    const on = film.fracture;
+    const on = Math.max(film.fracture, film.tesseract * 0.85);
     if (!g.current || !mat.current) return;
     g.current.visible = on > 0.002;
     if (!g.current.visible) return;
     // Which fold are we in, and how far through it: the twist is a quarter
     // turn about the travel axis, the fourth dimension folding into view.
-    const q = film.u < 5.5 ? q45 : q67;
+    const closing = film.tesseract > film.fracture;
+    const q = closing ? q67 : film.u < 5.5 ? q45 : q67;
     const fu = film.u - Math.floor(film.u);
-    tw.setFromAxisAngle(Z, (fu - 0.5) * Math.PI * 0.5);
+    tw.setFromAxisAngle(Z, closing ? film.scrub * Math.PI * 0.5 : (fu - 0.5) * Math.PI * 0.5);
     g.current.quaternion.copy(q).multiply(tw);
     // Wrap around the camera: snap the lattice to the nearest cell.
     inv.copy(g.current.quaternion).invert();
     local.copy(camera.position).applyQuaternion(inv);
-    local.set(Math.round(local.x / SIZE) * SIZE, Math.round(local.y / SIZE) * SIZE + SIZE * 0.5, Math.round(local.z / SIZE) * SIZE);
+    // Inside the closing tesseract, dragging time slides the whole lattice past you.
+    const slide = closing ? film.scrub * SIZE * 6 : 0;
+    local.set(Math.round(local.x / SIZE) * SIZE, Math.round(local.y / SIZE) * SIZE + SIZE * 0.5, Math.round((local.z - slide) / SIZE) * SIZE + slide);
     g.current.position.copy(local.applyQuaternion(g.current.quaternion));
     mat.current.uniforms.uOn.value = Math.min(1, on * 1.3);
     mat.current.uniforms.uTime.value = film.time;

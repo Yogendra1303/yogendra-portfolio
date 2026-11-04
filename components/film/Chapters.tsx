@@ -19,6 +19,8 @@ import { ArrowDown, GitBranch, Link2, Mail } from "lucide-react";
 import { chapters, credits, owner, type Chapter, type Shot } from "@/content/story";
 import { sections, type Window } from "@/lib/plan";
 import { Brackets, Count, Decode, Echo, Ghosted, clamp01, useMap, useShot } from "./cine";
+import { TimeGrid } from "./TimeGrid";
+import { film } from "@/lib/film";
 
 type Ctx = { c: Chapter; i: number; p: MotionValue<number>; reduced: boolean; onJump: (id: string) => void };
 
@@ -242,28 +244,6 @@ function Roll({ ctx, shot, w }: { ctx: Ctx; shot: Extract<Shot, { kind: "roll" }
   );
 }
 
-/** The chapter index: every moment, open to enter. Shown last, after contact. */
-function Index({ onJump }: { onJump: (id: string) => void }) {
-  return (
-    <div className="w-full max-w-3xl px-2">
-      <p className="text-center font-mono text-[10px] uppercase tracking-[0.55em] text-white/55">Enter any moment</p>
-      <nav aria-label="Jump to a chapter" className="mt-6">
-        <ul className="grid gap-x-12 sm:grid-cols-2">
-          {chapters.slice(1, chapters.length - 1).map((ch) => (
-            <li key={ch.id} className="border-t border-white/10">
-              <button type="button" onClick={() => onJump(ch.id)} className="group pointer-events-auto flex w-full items-baseline gap-4 py-2.5 text-start focus-visible:outline-none">
-                <span className="font-mono text-[10px] tracking-[0.3em]" style={{ color: ch.color }}>{ch.index}</span>
-                <span className="font-display text-[13px] uppercase tracking-[0.3em] text-white/70 transition group-hover:text-white group-focus-visible:text-white">{ch.title}</span>
-                <span className="ms-auto whitespace-nowrap font-mono text-[9px] uppercase tracking-[0.2em] text-white/40">{ch.when}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </nav>
-    </div>
-  );
-}
-
 function Shots({ ctx }: { ctx: Ctx }) {
   const plan = sections[ctx.i];
   let fig = 0;
@@ -369,7 +349,11 @@ function Finale({ ctx }: { ctx: Ctx }) {
   const [live, setLive] = useState(false);
   const [indexLive, setIndexLive] = useState(false);
   useMotionValueEvent(contact, "change", (v) => setLive(v > 0.05));
-  useMotionValueEvent(index, "change", (v) => setIndexLive(v > 0.05));
+  const contactScale = useMap(p, [0.8, 0.88], [1, 0.82]);
+  useMotionValueEvent(index, "change", (v) => {
+    setIndexLive(v > 0.05);
+    film.tesseract = v;
+  });
   return (
     <>
       <motion.div ref={roll} style={{ y, opacity: rollOpacity }} className="absolute inset-x-0 top-0 flex flex-col items-center px-6 text-center">
@@ -386,7 +370,7 @@ function Finale({ ctx }: { ctx: Ctx }) {
           </div>
         ))}
       </motion.div>
-      <motion.div style={{ opacity: contact, y: contactY, visibility: live ? "visible" : "hidden" }} className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
+      <motion.div style={{ opacity: contact, y: contactY, scale: contactScale, visibility: live ? "visible" : "hidden" }} className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center">
         <p className="font-mono text-[10px] uppercase tracking-[0.5em] text-white/55">Next chapter · unwritten</p>
         <a
           href={`mailto:${owner.email}`}
@@ -411,8 +395,8 @@ function Finale({ ctx }: { ctx: Ctx }) {
           Watch again
         </button>
       </motion.div>
-      <motion.div style={{ opacity: index, y: indexY, visibility: indexLive ? "visible" : "hidden" }} className="absolute inset-x-0 bottom-[9vh] flex justify-center px-4">
-        <Index onJump={onJump} />
+      <motion.div style={{ opacity: index, y: indexY, visibility: indexLive ? "visible" : "hidden" }} className="absolute inset-x-0 bottom-[8vh] flex justify-center px-4">
+        <TimeGrid onJump={onJump} live={indexLive} />
       </motion.div>
     </>
   );

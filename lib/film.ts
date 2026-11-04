@@ -92,6 +92,10 @@ class Film {
   hit = 99;
   /** 1 the moment a crisis lets go (the pull breaks), easing to 0. */
   breakaway = 0;
+  /** 0..1: the closing tesseract (the time index after contact) is on screen. */
+  tesseract = 0;
+  /** 0..1: where the visitor has dragged time to inside the tesseract. */
+  scrub = 0;
   /** Where the world's light is, and how strongly it shines (set by Effects). */
   light = new THREE.Vector3();
   lightOn = 0;

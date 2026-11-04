@@ -97,3 +97,29 @@ body {
 .warp .frame {
   filter: url(#gravity-warp);
 }
+
+/* The time axis in the closing tesseract: a hairline with a glowing cursor. */
+.time-axis {
+  appearance: none;
+  height: 18px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent) center / 100% 1px no-repeat;
+  cursor: ew-resize;
+}
+.time-axis::-webkit-slider-thumb {
+  appearance: none;
+  width: 2px;
+  height: 18px;
+  background: var(--signal);
+  box-shadow: 0 0 12px var(--signal);
+}
+.time-axis::-moz-range-thumb {
+  width: 2px;
+  height: 18px;
+  border: 0;
+  background: var(--signal);
+  box-shadow: 0 0 12px var(--signal);
+}
+.time-axis:focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.4);
+  outline-offset: 6px;
+}

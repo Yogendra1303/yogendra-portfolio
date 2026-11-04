@@ -260,7 +260,14 @@ export function Director() {
     const D = camera.position.distanceTo(BLACK_HOLE);
     const bh = u < CUTS[0].to ? Math.min(1, open) : 0;
     setLens(0, camera.position, BLACK_HOLE, bh > 0 ? Math.min(0.95, Math.sqrt((2.5 * BH_RADIUS * bh) / Math.max(D, 0.5))) : 0, 0);
-    setLens(1, camera.position, film.focus, film.section >= 3 ? 0.13 * film.crisis : 0, 0.32);
+    // Slot 1: the crisis mass, or the event horizon of the enterprise pivot (dead ahead).
+    const horizon = film.reduced || u > 5.5 ? 0 : film.fracture;
+    if (film.section >= 3 && film.crisis > 0.02) setLens(1, camera.position, film.focus, 0.13 * film.crisis, 0.32);
+    else if (horizon > 0.01) {
+      camera.getWorldDirection(fwd);
+      ahead.copy(camera.position).addScaledVector(fwd, 40);
+      setLens(1, camera.position, ahead, 0.24 * horizon, 0.05);
+    } else setLens(1, camera.position, film.focus, 0, 0);
     setLens(2, camera.position, ORBITS, 0.07 * film.presence(5), 0.18);
   }, -1);
 
