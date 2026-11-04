@@ -181,14 +181,14 @@ export const chapters: Chapter[] = [
   {
     id: "consulting",
     index: "06",
-    title: "A Distributed System",
+    title: "No Fixed Orbit",
     when: "2025 – now",
     year: 2025,
     coords: "25.20° N  55.27° E",
     side: "right",
     color: "#ff8a5c",
     shots: [
-      { kind: "slate", slug: "Consulting · Gurugram and Dubai · May 2025", title: "A Distributed System" },
+      { kind: "slate", slug: "Consulting · Gurugram and Dubai · May 2025", title: "No Fixed Orbit" },
       { kind: "say", text: "For years, I kept the clients." },
       { kind: "say", text: "Now I hunt them." },
       { kind: "credit", role: "Program Management Consultant", org: "Business Consulting", when: "May 2025 – now" },

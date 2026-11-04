@@ -128,7 +128,7 @@ function build() {
   }
   verb = c.createConvolver();
   verb.buffer = ir;
-  verb.connect(gain(c, 0.55)).connect(mix);
+  verb.connect(gain(c, 0.68)).connect(mix);
   white = noise(c, 2, false);
   const brown = noise(c, 4, true);
 
@@ -196,14 +196,16 @@ function build() {
   pf.connect(pg);
   pg.connect(mix);
   pg.connect(verb);
+  // Organ pipes: warm harmonics, two per note a breath apart.
+  const organ = c.createPeriodicWave(new Float32Array(9), new Float32Array([0, 1, 0.5, 0.28, 0.16, 0.07, 0.09, 0.02, 0.04]));
   const banks = [0, 1].map(() => {
     const g = gain(c, 0);
     g.connect(pf);
     const osc: OscillatorNode[] = [];
     for (let k = 0; k < 8; k++) {
       const o = c.createOscillator();
-      o.type = k % 2 ? "sawtooth" : "triangle";
-      o.detune.value = k % 2 ? 6 : -6;
+      o.setPeriodicWave(organ);
+      o.detune.value = k % 2 ? 5 : -5;
       const og = gain(c, k < 2 ? 0.5 : 0.3);
       o.connect(og).connect(g);
       o.start();
@@ -452,10 +454,10 @@ export function updateScore() {
     bank = 1 - bank;
     pad.shimOsc.forEach((o, k) => o.frequency.setTargetAtTime(CHORDS[want][(k + 1) % 4] * 8, now, 1.5));
   }
-  set(pad.gain.gain, 0.085 * (1 - 0.35 * crisis) * (1 + 0.3 * film.horizon), 0.8);
-  set(pad.filter.frequency, 650 + 900 * story + 900 * s - 300 * crisis - 250 * gravity, 0.6);
+  set(pad.gain.gain, 0.1 * (1 - 0.35 * crisis) * (1 + 0.3 * film.horizon), 0.8);
+  set(pad.filter.frequency, 900 + 1100 * story + 900 * s - 350 * crisis - 300 * gravity, 0.6);
   for (const b of pad.banks) b.osc.forEach((o, k) => set(o.detune, (k % 2 ? 6 : -6) - 50 * gravity + (k % 2 ? 1 : -1) * 18 * crisis, 0.6));
-  set(pad.shimmer.gain, 0.014 + 0.01 * story, 1);
+  set(pad.shimmer.gain, 0.008 + 0.006 * story, 1);
   set(air.band.frequency, 140 + 1100 * story + 900 * s, 0.4);
 
   // Between chapters: a riser scrubbed by the scroll, then silence before arrival.
@@ -507,7 +509,7 @@ export function updateScore() {
   lastBreak = film.breakaway;
   const slate = slateOnScreen();
   if (slate && slate !== lastSlate && now - lastBraam > 3) {
-    braam(ROOTS[film.section] ?? 55, film.section === 0 ? 0.35 : 0.5);
+    braam(ROOTS[film.section] ?? 55, film.section === 0 ? 0.3 : 0.4);
     lastBraam = now;
   }
   lastSlate = slate;

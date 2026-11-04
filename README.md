@@ -25,7 +25,7 @@ A browser-based cinematic sequence of a nine-year career arc. Scroll to move thr
 | 04 | Critical Mass (General Manager) | General Manager, 2023 – 2024: a 500+ workshop network, repeat usage 31% to 38%, and a second storm of timelines. |
 | → | Dimensional shift | The frame shatters while the camera zooms down an endless lattice of cube frames. |
 | 05 | The Absolute Order (enterprise) | RightChoice: a swarm (B2C) collapses into 15 heavy orbiting bodies (B2B). |
-| 06 | A Distributed System (consulting) | Program management consulting and ConsultBae: Gurugram ⇄ Dubai. |
+| 06 | No Fixed Orbit (consulting) | Program management consulting and ConsultBae: Gurugram ⇄ Dubai. |
 | 07 | The Synthesis | A 4D tesseract with every chapter's thread through it. Time stops here. |
 | 08 | Order | Initiate contact. Then the climax, an event horizon: the frame bends around a dark centre and cracks open into the tesseract: a corridor of every moment; drag through time and enter any of them. |
 

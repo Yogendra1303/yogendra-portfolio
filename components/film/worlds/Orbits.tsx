@@ -125,7 +125,8 @@ export function Orbits() {
       const m = planetRefs.current[i];
       if (!m) return;
       planetPos(pl, t, m.position);
-      m.scale.setScalar(0.2 + k * 0.8);
+      // Bodies gain mass as the customers fall in, and breathe with it.
+      m.scale.setScalar((0.2 + k * 1.1) * (1 + 0.06 * Math.sin(t * 1.7 + i)));
     });
 
     const P = (swarm.g.getAttribute("position") as THREE.BufferAttribute).array as Float32Array;
@@ -137,18 +138,20 @@ export function Orbits() {
       const hy = swarm.home[i3 + 1] + Math.cos(w * 0.9) * 0.5;
       const hz = swarm.home[i3 + 2] + Math.sin(w * 0.7) * 0.8;
       planetPos(planets[swarm.owner[i]], t, v);
-      // Each one is pulled into its account's orbit as the scroll advances.
+      // The gravity flips: the crowd first blooms outward, then each one falls
+      // into its account's orbit as the scroll advances.
       const kk = Math.min(1, Math.max(0, k * 1.3 - (i % 7) * 0.04));
-      P[i3] = hx + (v.x + swarm.jitter[i3] - hx) * kk;
-      P[i3 + 1] = hy + (v.y + swarm.jitter[i3 + 1] - hy) * kk;
-      P[i3 + 2] = hz + (v.z + swarm.jitter[i3 + 2] - hz) * kk;
+      const bloom = 1 + 0.55 * Math.sin(Math.PI * Math.min(1, k * 2.2)) * (1 - kk);
+      P[i3] = hx * bloom + (v.x + swarm.jitter[i3] - hx * bloom) * kk;
+      P[i3 + 1] = hy * bloom + (v.y + swarm.jitter[i3 + 1] - hy * bloom) * kk;
+      P[i3 + 2] = hz * bloom + (v.z + swarm.jitter[i3 + 2] - hz * bloom) * kk;
     }
     swarm.g.getAttribute("position").needsUpdate = true;
 
     if (swarmMat.current) swarmMat.current.uniforms.uOn.value = on * (1 - k * 0.55);
     if (ringRef.current) ringRef.current.rotation.y += dt * 0.045;
     if (ringMat.current) ringMat.current.opacity = on * (0.15 + k * 0.5);
-    orbitMats.current.forEach((m) => m && (m.opacity = on * k * 0.18));
+    orbitMats.current.forEach((m) => m && (m.opacity = on * k * 0.32));
     if (starMat.current) starMat.current.opacity = on;
   });
 
