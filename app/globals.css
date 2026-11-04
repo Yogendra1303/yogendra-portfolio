@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+/* Design tokens */
+:root {
+  --void: #000000;
+  --signal: #2bff88; /* the expected path */
+  --ember: #ffb35c; /* anomalies, nexus events */
+  --ease-chaos: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-order: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-cut: cubic-bezier(1, 0, 0, 1);
+}
+
+@theme inline {
+  --font-display: var(--font-display);
+  --font-sans: var(--font-text);
+  --font-mono: var(--font-mono-face);
+  --font-serif: var(--font-serif-face);
+}
+
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+
+/* Soft darkness behind text so words always read over bright space */
+.text-scrim::before {
+  content: "";
+  position: absolute;
+  inset: -12vh -14vw;
+  z-index: -1;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0));
+  pointer-events: none;
+}
+
+html,
+body {
+  background: var(--void);
+  color: #fff;
+  font-family: var(--font-text), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: var(--font-display), system-ui, sans-serif;
+}
+
+
+
+/* Monumental title cards: very wide tracking, sized per title in Chapters.tsx. */
+.title-card {
+  font-size: var(--fit-sm);
+  font-weight: 400;
+  line-height: 1.32;
+  letter-spacing: 0.42em;
+  /* balances the tracking after the last letter, so each line truly centres */
+  padding-inline-start: 0.42em;
+}
+@media (min-width: 640px) {
+  .title-card {
+    font-size: var(--fit-lg);
+  }
+}
+
+/*
+ * Film grain over the whole frame, words included. A static noise tile jumps
+ * to a new offset ten times per cycle (about 24 fps): grain, not shimmer.
+ * Overlay blending leaves black untouched, so the void stays void.
+ */
+.film-grain {
+  position: fixed;
+  inset: -120px;
+  z-index: 30;
+  pointer-events: none;
+  opacity: 0.1;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 240px 240px;
+  animation: film-grain 0.42s steps(1) infinite;
+}
+@keyframes film-grain {
+  0% { transform: translate3d(0, 0, 0); }
+  10% { transform: translate3d(-37px, 21px, 0); }
+  20% { transform: translate3d(53px, -61px, 0); }
+  30% { transform: translate3d(-91px, -17px, 0); }
+  40% { transform: translate3d(13px, 83px, 0); }
+  50% { transform: translate3d(-63px, 47px, 0); }
+  60% { transform: translate3d(97px, 7px, 0); }
+  70% { transform: translate3d(-11px, -97px, 0); }
+  80% { transform: translate3d(71px, 59px, 0); }
+  90% { transform: translate3d(-83px, -71px, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .film-grain {
+    animation: none;
+  }
+}
+
+/* Gravity on the words: the text frame bends around the crisis mass (see Hud.tsx). */
+.warp .frame {
+  filter: url(#gravity-warp);
+}
