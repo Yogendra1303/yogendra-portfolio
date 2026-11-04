@@ -20,6 +20,8 @@ import { Hud } from "./Hud";
 import { Fragments, Warp } from "./Warp";
 import { Lattice } from "./worlds/Lattice";
 import { Dust } from "./worlds/Dust";
+import { TimelineTree } from "./worlds/TimelineTree";
+import { Loom } from "./worlds/Loom";
 import { useAutoplay } from "./useAutoplay";
 import { BlackHole } from "./worlds/BlackHole";
 import { CareerLine } from "./worlds/CareerLine";
@@ -29,7 +31,6 @@ import { ExpectedPath } from "./worlds/ExpectedPath";
 import { Network } from "./worlds/Network";
 import { Orbits } from "./worlds/Orbits";
 import { Science } from "./worlds/Science";
-import { Tesseract } from "./worlds/Tesseract";
 import { Wormhole } from "./worlds/Wormhole";
 
 const { gurugram, bengaluru, dubai } = CITIES;
@@ -128,6 +129,7 @@ export default function Film() {
             <Backdrop />
             <Warp />
             <Dust />
+            <Loom />
             <Fragments />
             <Destination />
             <ExpectedPath />
@@ -158,7 +160,7 @@ export default function Film() {
                 { from: dubai, to: gurugram, start: DXB + 0.04, end: DXB + 0.08, color: "#ffb35c" }
               ]}
             />
-            <Tesseract />
+            <TimelineTree />
             <Effects />
           </Suspense>
         </Canvas>

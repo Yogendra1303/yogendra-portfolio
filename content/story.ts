@@ -205,7 +205,7 @@ export const chapters: Chapter[] = [
     index: "07",
     title: "The Synthesis",
     when: "2014 – 2026",
-    side: "center",
+    side: "left",
     color: "#ffffff",
     shots: [
       { kind: "slate", slug: "Outside time · every moment at once", title: "The Synthesis" },

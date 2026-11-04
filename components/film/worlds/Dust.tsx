@@ -28,6 +28,7 @@ const vert = /* glsl */ `
   uniform float uChurn;
   uniform vec3 uLight;
   uniform float uLightOn;
+  uniform float uGold;
   varying float vA;
   varying float vWarm;
   void main() {
@@ -41,8 +42,8 @@ const vert = /* glsl */ `
     vec3 toLight = normalize(uLight - cameraPosition);
     float fwd = pow(max(0.0, dot(toDust, toLight)), 18.0) * uLightOn;
     float focus = smoothstep(1.0, 9.0, depth);
-    vWarm = fwd;
-    vA = (0.06 + fwd * 1.6) * (1.0 - smoothstep(16.0, 23.0, depth)) * (0.35 + 0.65 * focus) * smoothstep(0.4, 1.4, depth);
+    vWarm = max(fwd, uGold * step(0.72, aSeed.y));
+    vA = (0.06 + fwd * 1.6 + uGold * step(0.72, aSeed.y) * 0.5) * (1.0 - smoothstep(16.0, 23.0, depth)) * (0.35 + 0.65 * focus) * smoothstep(0.4, 1.4, depth);
     gl_PointSize = (2.0 + (1.0 - focus) * 9.0) * (0.6 + aSeed.x) * (60.0 / max(depth, 0.5)) * 0.12;
     gl_Position = projectionMatrix * mv;
   }
@@ -81,6 +82,7 @@ export function Dust() {
       uChurn: { value: 0 },
       uLight: { value: new THREE.Vector3() },
       uLightOn: { value: 0 },
+      uGold: { value: 0 },
     }),
     [],
   );
@@ -94,6 +96,7 @@ export function Dust() {
     u.uChurn.value = film.reduced ? 0 : film.crisis;
     u.uLight.value.copy(film.light);
     u.uLightOn.value = Math.min(1, film.lightOn * 2);
+    u.uGold.value = film.reduced ? 0 : film.crisis;
   });
   return (
     <points geometry={geo} frustumCulled={false}>

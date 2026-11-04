@@ -37,7 +37,7 @@ const vert = /* glsl */ `
   }
 `;
 const frag = /* glsl */ `
-  uniform float uReveal; uniform float uTime; uniform float uCrisis;
+  uniform float uReveal; uniform float uTime; uniform float uCrisis; uniform float uGain; uniform float uSurge;
   uniform float uStopS[${MAX_STOPS}]; uniform vec3 uStopC[${MAX_STOPS}]; uniform int uStops;
   varying float vU; varying vec3 vN; varying vec3 vV; varying float vDepth;
   void main() {
@@ -57,6 +57,8 @@ const frag = /* glsl */ `
     // Fade where the line passes right by the lens, so it never floods the frame.
     float g = (0.5 + rim + bands * 1.3 + head + seam * 2.4) * smoothstep(0.6, 6.0, vDepth);
     vec3 col = mix(c, vec3(1.0, 0.97, 0.92), clamp(seam * 0.55 + head * 0.06, 0.0, 1.0));
+    // Filaments: surges of light racing along, like a thread being pulled taut.
+    g = g * uGain + uSurge * pow(fract(vU * 7.0 - uTime * 0.9), 38.0) * 2.4 * smoothstep(0.6, 6.0, vDepth);
     gl_FragColor = vec4(col * g * 0.8, clamp(g * 0.8, 0.0, 1.0));
   }
 `;
@@ -67,7 +69,7 @@ const branchVert = /* glsl */ `
   attribute vec4 aWin;   // leaves at a, rejoins at b (arc), grows over story s0..s1
   attribute vec3 aCol;
   uniform float uTime; uniform float uCrisis; uniform float uReveal; uniform float uStory; uniform float uCalm;
-  varying float vU; varying float vGrow; varying float vA; varying float vSeed; varying float vCri;
+  varying float vU; varying float vGrow; varying float vA; varying float vSeed; varying float vCri; varying float vWither;
   varying vec3 vCol; varying vec3 vN; varying vec3 vV;
   void main() {
     float u = aMeta.x;
@@ -88,6 +90,7 @@ const branchVert = /* glsl */ `
     vGrow = clamp((uStory - aWin.z) / max(1e-4, aWin.w - aWin.z), 0.0, 1.0);
     float dieP = 1.0 - 0.94 * smoothstep(aWin.y - (aWin.y - aWin.x) * 0.35, aWin.y + 0.015, uReveal);
     vA = (pruned > 0.5 ? dieP : 1.0 - 0.6 * settle) * smoothstep(0.6, 5.0, -mv.z);
+    vWither = pruned > 0.5 ? 1.0 - dieP : 0.0;
     vSeed = aMeta.y;
     vCri = aMeta.z;
     vCol = aCol;
@@ -96,15 +99,18 @@ const branchVert = /* glsl */ `
 `;
 const branchFrag = /* glsl */ `
   uniform float uTime; uniform float uCrisis;
-  varying float vU; varying float vGrow; varying float vA; varying float vSeed; varying float vCri;
+  varying float vU; varying float vGrow; varying float vA; varying float vSeed; varying float vCri; varying float vWither;
   varying vec3 vCol; varying vec3 vN; varying vec3 vV;
   void main() {
     if (vU > vGrow || vA < 0.01) discard;
     float rim = pow(1.0 - abs(dot(vN, vV)), 1.3);
     float tip = exp(-(vGrow - vU) * 24.0) * step(vGrow, 0.995) * 2.6;
     float bands = pow(fract(vU * 9.0 - uTime * 0.7 + vSeed), 10.0);
-    float g = (0.4 + rim * 0.7 + bands * 0.9 + tip) * vA * (1.0 + uCrisis * vCri * 0.4);
-    vec3 col = mix(vCol, vec3(1.0, 0.95, 0.85), clamp(tip * 0.25, 0.0, 1.0));
+    // Sparks race along a living timeline; a pruned one withers grey and dims.
+    float spark = pow(fract(vU * 14.0 - uTime * 1.4 + vSeed * 5.0), 36.0) * 2.2 * (1.0 - vWither);
+    float g = (0.4 + rim * 0.7 + bands * 0.9 + tip + spark) * vA * (1.0 + uCrisis * vCri * 0.4);
+    vec3 col = mix(vCol, vec3(1.0, 0.95, 0.85), clamp(tip * 0.25 + spark * 0.2, 0.0, 1.0));
+    col = mix(col, vec3(0.42, 0.46, 0.48), vWither);
     gl_FragColor = vec4(col * g * 0.55, clamp(g * 0.55, 0.0, 1.0));
   }
 `;
@@ -246,7 +252,30 @@ export function CareerLine() {
       uStopS: { value: S },
       uStopC: { value: C },
       uStops: { value: stops.length },
+      uGain: { value: 1 },
+      uSurge: { value: 0 },
     };
+  }, []);
+  // The braid: three thin filaments twisting around the line, sharing its uniforms.
+  const braid = useMemo(() => {
+    const P = new THREE.Vector3(), T = new THREE.Vector3(), N = new THREE.Vector3(), B = new THREE.Vector3();
+    const up = new THREE.Vector3(0, 1, 0);
+    const M = 3200;
+    const turns = careerCurve.getLength() / 3.2;
+    return [0, 1, 2].map((i) => {
+      const pts: THREE.Vector3[] = [];
+      for (let k = 0; k <= M; k++) {
+        const s = k / M;
+        careerCurve.getPointAt(s, P);
+        careerCurve.getTangentAt(s, T);
+        N.crossVectors(T, up).normalize();
+        B.crossVectors(T, N).normalize();
+        const a = (i / 3) * Math.PI * 2 + s * turns * Math.PI * 2;
+        const rad = 0.16 + 0.04 * Math.sin(s * 400 + i);
+        pts.push(P.clone().addScaledVector(N, Math.cos(a) * rad).addScaledVector(B, Math.sin(a) * rad));
+      }
+      return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 6400, 0.011, 4, false);
+    });
   }, []);
   const bUniforms = useMemo(() => ({ uTime: { value: 0 }, uCrisis: { value: 0 }, uReveal: { value: 0 }, uStory: { value: 0 }, uCalm: { value: 1 } }), []);
   const gUniforms = useMemo(() => ({ uTime: { value: 0 }, uCrisis: { value: 0 }, uReveal: { value: 0 }, uStory: { value: 0 } }), []);
@@ -304,6 +333,11 @@ export function CareerLine() {
 
   return (
     <group>
+      {braid.map((bg, i) => (
+        <mesh key={i} geometry={bg} frustumCulled={false}>
+          <shaderMaterial vertexShader={vert} fragmentShader={frag} uniforms={{ ...uniforms, uGain: { value: 0.45 }, uSurge: { value: 1 } }} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
+        </mesh>
+      ))}
       <mesh ref={mesh} geometry={geo} frustumCulled={false}>
         <shaderMaterial ref={mat} vertexShader={vert} fragmentShader={frag} uniforms={uniforms} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>

@@ -112,8 +112,9 @@ export type Branch = {
   seed: number;
 };
 
-const EMBER = ["#ff8a2b", "#ff5a36", "#ffc46b", "#ff3d6e"];
-const COOL = ["#4dd8ff", "#9b7bff", "#2bff88"];
+// Side timelines glow green with a thread of gold; the pruned ones wither grey.
+const EMBER = ["#5dffa8", "#2bff88", "#ffd27a", "#9dffd8"];
+const COOL = ["#4dd8ff", "#7dffc4", "#2bff88"];
 const MIXED = ["#4dd8ff", "#9b7bff", "#ffc46b", "#2bff88", "#ff8a2b"];
 
 export const BRANCHES: Branch[] = (() => {

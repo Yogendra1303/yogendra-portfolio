@@ -231,9 +231,10 @@ const bakeFrag = /* glsl */ `
     vec3 d = normalize(vDir);
     float n = fbm(d * 2.4);
     float m = fbm(d * 5.0);
-    vec3 violet = vec3(0.16, 0.05, 0.28);
-    vec3 teal = vec3(0.0, 0.16, 0.14);
-    vec3 col = mix(violet, teal, smoothstep(0.35, 0.75, m)) * pow(smoothstep(0.47, 0.98, n), 2.1) * 1.15;
+    // The loom's mist: deep teal and green, rare and soft, over true black.
+    vec3 deep = vec3(0.02, 0.09, 0.13);
+    vec3 green = vec3(0.03, 0.19, 0.1);
+    vec3 col = mix(deep, green, smoothstep(0.35, 0.75, m)) * pow(smoothstep(0.45, 0.98, n), 2.0) * 1.35;
     gl_FragColor = vec4(col, 1.0);
   }
 `;
@@ -264,7 +265,7 @@ const nebulaFrag = /* glsl */ `
   void main() {
     vec3 d0 = normalize(vDir);
     vec3 d = lensInverse(d0);
-    vec3 col = textureCube(uNebula, d).rgb * (0.5 + uTremor * 0.3);
+    vec3 col = textureCube(uNebula, d).rgb * (0.5 + uTremor * 0.3) + vec3(0.0025, 0.009, 0.011);
     col += dust(d, 260.0, 0.11) * 0.5 + dust(d, 120.0, 0.05) * 0.7;
     // Unseen masses: background light smeared into broken arcs on the
     // Einstein ring, and a darker core where the mass sits.

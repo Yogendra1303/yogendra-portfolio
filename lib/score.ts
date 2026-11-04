@@ -11,7 +11,9 @@
  * swells slowly, risers lead into impacts, impacts dip everything for a beat.
  * A melody floats over it: a slow, sparse line of soft bell-piano notes drawn
  * from each chapter's chord, phrase by phrase, never the same twice, slowing
- * when time dilates. Everything is driven by the scroll and the story:
+ * when time dilates. In the chaos (a crisis, the synthesis, the horizon) the
+ * melody passes to a gliding, theremin-like voice and a wordless choir swells
+ * underneath: original writing, in the spirit of time-bending scores. Everything is driven by the scroll and the story:
  * - Underneath: a 40 Hz sub, and a master filter that opens as you move
  *   through the film (dark at the start, open at the end).
  * - Between chapters: a high riser scrubbed by the scroll, cut to silence
@@ -75,6 +77,32 @@ let stopTimer = 0;
 let nextNote = 0;
 let phraseLeft = 0;
 let melodyIdx = 4;
+let lastFreq = 0;
+let choir: { gain: GainNode; osc: OscillatorNode[] };
+
+/** The gliding voice: one sine that slides into each note and sings with vibrato. */
+function glide(f: number, at: number, level: number) {
+  if (!ctx) return;
+  const c = ctx;
+  const o = c.createOscillator();
+  o.frequency.setValueAtTime(lastFreq || f, at);
+  o.frequency.exponentialRampToValueAtTime(f, at + 0.22);
+  const vib = c.createOscillator();
+  vib.frequency.value = 5.4;
+  const depth = gain(c, f * 0.008);
+  vib.connect(depth).connect(o.frequency);
+  const g = gain(c, 0);
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(level, at + 0.28);
+  g.gain.setTargetAtTime(0.0001, at + 1.1, 0.7);
+  o.connect(g);
+  g.connect(mix);
+  g.connect(verb);
+  o.start(at);
+  vib.start(at);
+  o.stop(at + 4);
+  vib.stop(at + 4);
+}
 
 /** One note of the melody: a soft bell-piano (sine body, faint octave, long ring). */
 function note(f: number, at: number, level: number) {
@@ -116,7 +144,10 @@ function melody(now: number, chordHz: number[], dilation: number) {
   if (phraseLeft <= 0) phraseLeft = 4 + Math.floor(rnd() * 3);
   melodyIdx = Math.min(pool.length - 1, Math.max(0, melodyIdx + [-1, 1, 1, -1, 2, -2, 0][Math.floor(rnd() * 7)]));
   const at = Math.max(now + 0.02, nextNote);
-  note(pool[melodyIdx], at, 0.05 + rnd() * 0.02);
+  const chaos = film.crisis > 0.3 || film.section === 7 || film.horizon > 0.2;
+  if (chaos) glide(pool[melodyIdx] / 2, at, 0.045 + rnd() * 0.015);
+  else note(pool[melodyIdx], at, 0.05 + rnd() * 0.02);
+  lastFreq = pool[melodyIdx] / 2;
   phraseLeft -= 1;
   const slow = 1 / Math.max(0.35, dilation);
   nextNote = at + (phraseLeft > 0 ? 0.85 + rnd() * 0.5 : 3 + rnd() * 2.5) * slow;
@@ -280,6 +311,26 @@ function build() {
     return o;
   });
   pad = { gain: pg, filter: pf, banks, shimmer: sh, shimOsc };
+
+  // A wordless choir: sawtooth voices through two vowel formants ("aah").
+  const cg = gain(c, 0);
+  const f1 = band(c, "bandpass", 720, 5);
+  const f2 = band(c, "bandpass", 1180, 6);
+  const f2g = gain(c, 0.6);
+  f1.connect(cg);
+  f2.connect(f2g).connect(cg);
+  cg.connect(mix);
+  cg.connect(verb);
+  const cosc = [0, 1, 2, 3].map((k) => {
+    const o = c.createOscillator();
+    o.type = "sawtooth";
+    o.detune.value = (k - 1.5) * 7;
+    o.connect(f1);
+    o.connect(f2);
+    o.start();
+    return o;
+  });
+  choir = { gain: cg, osc: cosc };
 
   // Outside time: bells that hang.
   bells = gain(c, 0);
@@ -506,12 +557,18 @@ export function updateScore() {
     set(pad.banks[bank].gain.gain, 0, 1.4);
     bank = 1 - bank;
     pad.shimOsc.forEach((o, k) => o.frequency.setTargetAtTime(CHORDS[want][(k + 1) % 4] * 8, now, 1.5));
+    choir.osc.forEach((o, k) => o.frequency.setTargetAtTime(CHORDS[want][k] * 2, now, 1.2));
   }
   set(pad.gain.gain, 0.1 * (1 - 0.35 * crisis) * (1 + 0.3 * film.horizon), 0.8);
   set(pad.filter.frequency, 900 + 1100 * story + 900 * s - 350 * crisis - 300 * gravity, 0.6);
   for (const b of pad.banks) b.osc.forEach((o, k) => set(o.detune, (k % 2 ? 6 : -6) - 50 * gravity + (k % 2 ? 1 : -1) * 18 * crisis, 0.6));
   set(pad.shimmer.gain, 0.008 + 0.006 * story, 1);
   melody(now, CHORDS[want], film.dilation);
+  // The one crescendo of the film: the tree of timelines blooming in The Synthesis.
+  const bloom = film.section === 7 ? Math.sin(Math.PI * clamp01(film.progressIn(7) / 0.6)) : 0;
+  set(choir.gain.gain, 0.05 * Math.max(crisis, film.presence(7) * 0.8, film.horizon) + 0.05 * bloom, 1.2);
+  set(sub.gain.gain, 0.14 + 0.3 * gravity + 0.28 * held + 0.06 * s + 0.35 * film.horizon + 0.3 * bloom, 0.8);
+  set(pad.gain.gain, 0.1 * (1 - 0.35 * crisis) * (1 + 0.3 * film.horizon + 0.7 * bloom), 0.9);
   set(air.band.frequency, 120 + 700 * story + 600 * s, 0.4);
 
   // Between chapters: a riser scrubbed by the scroll, then silence before arrival.

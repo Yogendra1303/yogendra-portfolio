@@ -26,7 +26,7 @@ A browser-based cinematic sequence of a nine-year career arc. Scroll to move thr
 | → | Dimensional shift | The frame shatters while the camera zooms down an endless lattice of cube frames. |
 | 05 | The Absolute Order (enterprise) | RightChoice: a swarm (B2C) collapses into 15 heavy orbiting bodies (B2B). |
 | 06 | No Fixed Orbit (consulting) | Program management consulting and ConsultBae: Gurugram ⇄ Dubai. |
-| 07 | The Synthesis | A 4D tesseract with every chapter's thread through it. Time stops here. |
+| 07 | The Synthesis | The tree of timelines: every strand drawn in from the dark, burnt orange turning green, bound into one glowing trunk. Time stops here. |
 | 08 | Order | Initiate contact. Then the climax, an event horizon: the frame bends around a dark centre and cracks open into the tesseract: a corridor of every moment; drag through time and enter any of them. |
 
 ### The physics of the story
