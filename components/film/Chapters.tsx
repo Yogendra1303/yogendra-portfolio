@@ -234,7 +234,7 @@ function Roll({ ctx, shot, w }: { ctx: Ctx; shot: Extract<Shot, { kind: "roll" }
         {shot.names.map((name, k) => {
           const a = w.a + span * (0.08 + (k / shot.names.length) * 0.4);
           return (
-            <RollName key={name} p={p} a={a} b={a + span * 0.1} className="font-display text-[clamp(1.3rem,3.2vw,2.6rem)] uppercase leading-tight tracking-[0.1em] text-white">
+            <RollName key={name} p={p} a={a} b={a + span * 0.1} className="font-display text-[clamp(1.3rem,3.2vw,2.6rem)] font-bold uppercase leading-tight tracking-[0.1em] text-white">
               {name}
             </RollName>
           );
@@ -321,7 +321,7 @@ function ScrollCue({ p }: { p: MotionValue<number> }) {
   const opacity = useMap(p, [0, 0.05], [1, 0]);
   return (
     <motion.p aria-hidden style={{ opacity }} className="absolute inset-x-0 bottom-[13vh] flex items-center justify-center gap-3 font-mono text-[10px] uppercase tracking-[0.4em] text-white/50">
-      Scroll to begin <ArrowDown className="h-3.5 w-3.5 animate-bounce" aria-hidden />
+      Click for sound · scroll to begin <ArrowDown className="h-3.5 w-3.5 animate-bounce" aria-hidden />
     </motion.p>
   );
 }

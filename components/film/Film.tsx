@@ -55,9 +55,15 @@ export default function Film() {
       // Director), so the page itself should answer the wheel at once.
       lenis.current = new Lenis({ lerp: 0.11, smoothWheel: true, wheelMultiplier: 1.2, touchMultiplier: 1.5, autoRaf: true });
     }
+    // The link always opens on the first frame: never resume mid-film.
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
     // QA helper: ?chapter=5 starts on chapter 5.
     const q = new URLSearchParams(window.location.search);
     const start = q.get("chapter");
+    if (!start) {
+      window.scrollTo(0, 0);
+      film.snap = true;
+    }
     if (start) {
       const el = document.querySelectorAll<HTMLElement>("[data-chapter]")[Number(start)];
       const f = Number(q.get("f") ?? 0.3);
@@ -66,7 +72,18 @@ export default function Film() {
         film.snap = true;
       }
     }
-    return () => lenis.current?.destroy();
+    // Every click opens a little wormhole where it lands (Effects.tsx).
+    const click = (e: PointerEvent) => {
+      film.clickX = e.clientX / window.innerWidth;
+      film.clickY = 1 - e.clientY / window.innerHeight;
+      film.clickAt = film.clock;
+      film.clickBig = -1;
+    };
+    window.addEventListener("pointerdown", click);
+    return () => {
+      window.removeEventListener("pointerdown", click);
+      lenis.current?.destroy();
+    };
   }, []);
 
   const jump = useCallback((id: string) => {

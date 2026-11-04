@@ -153,6 +153,25 @@ export function Hud({ player }: { player: Player }) {
     };
   }, []);
 
+  // The score starts with the first click or key anywhere (browsers allow
+  // sound only after a gesture) and then plays continuously; Sound turns it off.
+  useEffect(() => {
+    const first = () => {
+      setSound((on) => {
+        if (!on) startScore();
+        return true;
+      });
+      window.removeEventListener("pointerdown", first, true);
+      window.removeEventListener("keydown", first, true);
+    };
+    window.addEventListener("pointerdown", first, true);
+    window.addEventListener("keydown", first, true);
+    return () => {
+      window.removeEventListener("pointerdown", first, true);
+      window.removeEventListener("keydown", first, true);
+    };
+  }, []);
+
   const c = chapters[current];
   const toggle = () => {
     if (sound) stopScore();

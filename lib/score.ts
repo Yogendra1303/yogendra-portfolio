@@ -3,11 +3,13 @@
  * The score. Original, synthesised live in the browser (no recordings, no
  * film music), and silent until the visitor presses Play or Sound.
  *
- * Timing model, measured from the reference sequences (Gravity's detachment,
- * the Interstellar wormhole, a singularity sound reel): silence is the main
- * instrument; sub-bass swells slowly; high risers only lead into impacts;
- * every impact and every exit cuts hard to silence. No loop, no pad that
- * repeats. Everything is driven by the scroll and the story:
+ * A constant, evolving bed that is always there, scrolling or still: a deep
+ * pad that changes chord with every chapter and breathes through a slowly
+ * moving filter, a high shimmer, the 40 Hz floor and the air of space.
+ * Over it, the drama, timed like the reference sequences (Gravity's
+ * detachment, the Interstellar wormhole, a singularity sound reel): sub-bass
+ * swells slowly, risers lead into impacts, impacts dip everything for a beat.
+ * Everything is driven by the scroll and the story:
  * - Underneath: a 40 Hz sub, and a master filter that opens as you move
  *   through the film (dark at the start, open at the end).
  * - Between chapters: a high riser scrubbed by the scroll, cut to silence
@@ -25,6 +27,19 @@ import { prng } from "@/lib/math";
 import { sections } from "@/lib/plan";
 
 const ROOTS = [55, 55, 43.65, 65.41, 49, 41.2, 43.65, 55, 55]; // braam root per chapter (Hz)
+/** Pad chords per chapter, semitones from A2 (110 Hz): original voicings. */
+const hz = (semi: number) => 110 * Math.pow(2, semi / 12);
+const CHORDS = [
+  [-12, 0, 3, 7], // 00 A minor: the line you are handed
+  [-12, -5, 0, 7], // 01 open fifths: school, certainty
+  [-16, -9, 0, 8], // 02 F: graduation, the pull
+  [-9, 3, 7, 10], // 03 C: the internship, the startup
+  [-14, -2, 2, 5], // 04 G: transformation
+  [-17, -5, -2, 2], // 05 E minor, low and heavy: enterprise
+  [-16, -4, 0, 10], // 06 F, open ninth: consulting
+  [-12, -5, 2, 7], // 07 suspended: outside time
+  [-12, 0, 4, 7], // 08 A major: resolution
+].map((c) => c.map(hz));
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const smooth = (a: number, b: number, x: number) => {
   const t = clamp01((x - a) / (b - a));
@@ -40,6 +55,9 @@ let riser: { gain: GainNode; band: BiquadFilterNode; osc: OscillatorNode; oscGai
 let tunnel: { gain: GainNode; band: BiquadFilterNode };
 let swell: { gain: GainNode; band: BiquadFilterNode };
 let bells: GainNode;
+let pad: { gain: GainNode; filter: BiquadFilterNode; banks: { gain: GainNode; osc: OscillatorNode[] }[]; shimmer: GainNode; shimOsc: OscillatorNode[] };
+let bank = 0;
+let chord = -1;
 let white: AudioBuffer;
 const rnd = prng(40);
 let lastUpdate = 0;
@@ -166,6 +184,50 @@ function build() {
   wg.connect(verb);
   swell = { gain: wg, band: wb };
 
+  // The bed: two banks of four voices so one chord dissolves into the next,
+  // through a filter that breathes on its own.
+  const pf = band(c, "lowpass", 900, 0.8);
+  const breath = c.createOscillator();
+  breath.frequency.value = 0.045;
+  const breathDepth = gain(c, 350);
+  breath.connect(breathDepth).connect(pf.frequency);
+  breath.start();
+  const pg = gain(c, 0.0);
+  pf.connect(pg);
+  pg.connect(mix);
+  pg.connect(verb);
+  const banks = [0, 1].map(() => {
+    const g = gain(c, 0);
+    g.connect(pf);
+    const osc: OscillatorNode[] = [];
+    for (let k = 0; k < 8; k++) {
+      const o = c.createOscillator();
+      o.type = k % 2 ? "sawtooth" : "triangle";
+      o.detune.value = k % 2 ? 6 : -6;
+      const og = gain(c, k < 2 ? 0.5 : 0.3);
+      o.connect(og).connect(g);
+      o.start();
+      osc.push(o);
+    }
+    return { gain: g, osc };
+  });
+  const sh = gain(c, 0);
+  sh.connect(verb);
+  const shimOsc = [0, 1, 2].map((k) => {
+    const o = c.createOscillator();
+    o.frequency.value = hz(24 + k * 7);
+    const t = gain(c, 0.3);
+    const lfo = c.createOscillator();
+    lfo.frequency.value = 0.07 + k * 0.03;
+    const d = gain(c, 0.25);
+    lfo.connect(d).connect(t.gain);
+    lfo.start();
+    o.connect(t).connect(sh);
+    o.start();
+    return o;
+  });
+  pad = { gain: pg, filter: pf, banks, shimmer: sh, shimOsc };
+
   // Outside time: bells that hang.
   bells = gain(c, 0);
   bells.connect(verb);
@@ -267,7 +329,7 @@ function crack() {
 }
 
 /** Cut to silence: drop everything now, let it creep back. */
-function silence(hold = 0.6, back = 2.5, floor = 0.0) {
+function silence(hold = 0.6, back = 2.5, floor = 0.3) {
   if (!ctx) return;
   const t = ctx.currentTime;
   duck.gain.cancelScheduledValues(t);
@@ -295,6 +357,12 @@ function resolve() {
     o.start(t);
     o.stop(t + 14.2);
   });
+}
+
+/** A click opens a small wormhole: a soft whoomp (deeper on a globe). */
+export function scoreClick(big: boolean) {
+  if (!on || !ctx || ctx.state !== "running") return;
+  hit({ low: big ? 42 : 95, lowLevel: big ? 0.5 : 0.16, crunch: 0, decay: big ? 1.3 : 0.45 });
 }
 
 /** A soft glass tick as a moment passes in the tesseract. */
@@ -362,12 +430,32 @@ export function updateScore() {
   // Underneath: the 40 Hz floor, sinking with gravity, swelling with a held crisis.
   crisisHeld = crisis > 0.5 ? crisisHeld + dtA : Math.max(0, crisisHeld - dtA * 3);
   const held = smooth(0, 9, crisisHeld);
-  set(sub.gain.gain, 0.05 + 0.3 * gravity + 0.28 * held + 0.06 * s + 0.35 * film.horizon, 0.6);
+  set(sub.gain.gain, 0.14 + 0.3 * gravity + 0.28 * held + 0.06 * s + 0.35 * film.horizon, 0.6);
   set(sub.a.frequency, 40 - 13 * gravity, 0.8);
   set(sub.b.frequency, 80 - 26 * gravity, 0.8);
   // The master filter opens as the story moves forward, and with speed.
-  set(tone.frequency, 700 + 6500 * story + 3000 * s, 0.4);
-  set(air.gain.gain, 0.01 + 0.12 * s, 0.25);
+  set(tone.frequency, 2200 + 5500 * story + 3000 * s, 0.4);
+  set(air.gain.gain, 0.035 + 0.12 * s, 0.25);
+
+  // The bed: a chord per chapter, always sounding; darker under pressure,
+  // brighter with speed, lifted by the shimmer.
+  const want = Math.min(CHORDS.length - 1, Math.max(0, Math.round(u)));
+  if (want !== chord) {
+    chord = want;
+    const next = pad.banks[1 - bank];
+    CHORDS[want].forEach((f, k) => {
+      next.osc[k * 2].frequency.setValueAtTime(f, now);
+      next.osc[k * 2 + 1].frequency.setValueAtTime(f, now);
+    });
+    set(next.gain.gain, 1, 1.4);
+    set(pad.banks[bank].gain.gain, 0, 1.4);
+    bank = 1 - bank;
+    pad.shimOsc.forEach((o, k) => o.frequency.setTargetAtTime(CHORDS[want][(k + 1) % 4] * 8, now, 1.5));
+  }
+  set(pad.gain.gain, 0.085 * (1 - 0.35 * crisis) * (1 + 0.3 * film.horizon), 0.8);
+  set(pad.filter.frequency, 650 + 900 * story + 900 * s - 300 * crisis - 250 * gravity, 0.6);
+  for (const b of pad.banks) b.osc.forEach((o, k) => set(o.detune, (k % 2 ? 6 : -6) - 50 * gravity + (k % 2 ? 1 : -1) * 18 * crisis, 0.6));
+  set(pad.shimmer.gain, 0.014 + 0.01 * story, 1);
   set(air.band.frequency, 140 + 1100 * story + 900 * s, 0.4);
 
   // Between chapters: a riser scrubbed by the scroll, then silence before arrival.
@@ -394,7 +482,7 @@ export function updateScore() {
     // One beat of silence (the cut), then the slam.
     hit({ low: 38, lowLevel: 0.9, crunch: 0.2, decay: 1.6, delay: 0.31 });
   }
-  if (!tunnelNow && inTunnel && u >= 2.84) silence(0.9, 2.5);
+  if (!tunnelNow && inTunnel && u >= 2.84) silence(0.7, 2.2, 0.45);
   inTunnel = tunnelNow;
   const tp = tunnelNow ? smooth(CUTS[0].to, 2.84, u) : 0;
   set(tunnel.gain.gain, tunnelNow ? 0.12 + 0.5 * tp : 0, tunnelNow ? 0.3 : 0.03);
@@ -405,7 +493,7 @@ export function updateScore() {
 
   // Events.
   if (film.sinceCut < lastCut && film.sinceCut < 0.3) {
-    if (film.cutKind < 0) silence(0.3, 0.02);
+    if (film.cutKind < 0) silence(0.3, 0.05, 0.12);
     else if (film.cutKind === 1) crack();
   }
   lastCut = film.sinceCut;
@@ -413,7 +501,7 @@ export function updateScore() {
   lastHit = film.hit;
   if (film.breakaway > 0.95 && lastBreak < 0.95) {
     // The pull breaks: everything but a breath drops away.
-    silence(1.4, 4, 0.08);
+    silence(1.2, 3.5, 0.4);
     crisisHeld = 0;
   }
   lastBreak = film.breakaway;

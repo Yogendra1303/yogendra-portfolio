@@ -5,8 +5,9 @@
  * room. Concept: past, present and future all present at once, and time as
  * something you can move through by hand. Reference: a navigable tesseract,
  * and a time-keeper's slider that pulls a whole timeline toward you.
- * - Drag across the corridor, use the time axis below, or the arrow keys, to
- *   travel; the chosen moment comes forward; select it to enter that chapter.
+ * - Scroll over it, drag across the corridor, pick a name on the time rail
+ *   (right), or use the arrow keys to travel; the chosen moment comes
+ *   forward; select it to enter that chapter.
  * - The WebGL lattice around the camera slides with you (film.scrub).
  * - Every moment is a real button, in order, so it works without the 3D.
  */
@@ -62,6 +63,30 @@ export function TimeGrid({ onJump, live }: { onJump: (id: string) => void; live:
   const [radius, setRadius] = useState(220);
   const [near, setNear] = useState(0);
   const drag = useRef<{ x: number; s: number; id: number; on: boolean } | null>(null);
+  const root = useRef<HTMLDivElement>(null);
+  const selRef = useRef(0);
+  selRef.current = sel;
+  // Scrolling over the tesseract travels through time instead of the page
+  // (until you scroll back past the first moment).
+  useEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    let idle = 0;
+    const wheel = (e: WheelEvent) => {
+      const next = selRef.current + e.deltaY / 260;
+      if (next < -0.05 && e.deltaY < 0) return; // let the page scroll back up
+      e.preventDefault();
+      e.stopPropagation();
+      setSel(Math.min(N - 1, Math.max(0, next)));
+      window.clearTimeout(idle);
+      idle = window.setTimeout(() => setSel((v) => Math.round(v)), 180);
+    };
+    el.addEventListener("wheel", wheel, { passive: false });
+    return () => {
+      el.removeEventListener("wheel", wheel);
+      window.clearTimeout(idle);
+    };
+  }, []);
 
   useEffect(() => {
     const r = () => setRadius(Math.min(230, window.innerWidth * 0.26));
@@ -86,68 +111,75 @@ export function TimeGrid({ onJump, live }: { onJump: (id: string) => void; live:
   const clampSel = (v: number) => Math.min(N - 1, Math.max(0, v));
   const m = MOMENTS[near];
 
+  const step = (d: number) => setSel((v) => clampSel(Math.round(v) + d));
   return (
-    <div className={`w-full max-w-5xl ${live ? "pointer-events-auto" : "pointer-events-none"}`}>
-      <p className="text-center font-mono text-[10px] uppercase tracking-[0.55em] text-white/55">Enter any moment · drag through time</p>
-      <div
-        className="relative mt-2 h-[34vh] cursor-grab touch-pan-y select-none active:cursor-grabbing [perspective:900px]"
-        onPointerDown={(e) => {
-          // A press only becomes a drag once it moves, so moments stay clickable.
-          drag.current = { x: e.clientX, s: pos.get(), id: e.pointerId, on: false };
-        }}
-        onPointerMove={(e) => {
-          const r = e.currentTarget.getBoundingClientRect();
-          if (!film.reduced) {
-            ry.set(((e.clientX - r.left) / r.width - 0.5) * 16);
-            rx.set(-((e.clientY - r.top) / r.height - 0.5) * 10);
-          }
-          const d = drag.current;
-          if (d) {
-            if (!d.on && Math.abs(e.clientX - d.x) > 6) {
-              d.on = true;
-              (e.currentTarget as HTMLElement).setPointerCapture(d.id);
+    <div ref={root} data-lenis-prevent className={`w-full max-w-6xl ${live ? "pointer-events-auto" : "pointer-events-none"}`}>
+      <p className="text-center font-mono text-[10px] uppercase tracking-[0.55em] text-white/55">Enter any moment · scroll or drag through time</p>
+      <div className="mt-2 flex flex-col gap-4 sm:flex-row sm:items-center">
+        <div
+          className="relative h-[30vh] flex-1 cursor-grab touch-pan-y select-none active:cursor-grabbing sm:h-[36vh] [perspective:900px]"
+          onPointerDown={(e) => {
+            // A press only becomes a drag once it moves, so moments stay clickable.
+            drag.current = { x: e.clientX, s: pos.get(), id: e.pointerId, on: false };
+          }}
+          onPointerMove={(e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            if (!film.reduced) {
+              ry.set(((e.clientX - r.left) / r.width - 0.5) * 16);
+              rx.set(-((e.clientY - r.top) / r.height - 0.5) * 10);
             }
-            if (d.on) setSel(clampSel(d.s - (e.clientX - d.x) / 140));
-          }
-        }}
-        onPointerUp={() => {
-          if (drag.current?.on) setSel((v) => Math.round(v));
-          drag.current = null;
-        }}
-        onPointerLeave={() => {
-          rx.set(0);
-          ry.set(0);
-        }}
-      >
-        <motion.div style={{ rotateX: rx, rotateY: ry, transformStyle: "preserve-3d" }} className="absolute inset-0">
-          {/* The time axis itself, running away from you. */}
-          <div aria-hidden className="absolute left-1/2 top-1/2 h-px w-[2400px] -translate-x-1/2 [transform:rotateY(90deg)] bg-[linear-gradient(90deg,transparent,rgba(124,255,196,0.5),transparent)]" />
+            const d = drag.current;
+            if (d) {
+              if (!d.on && Math.abs(e.clientX - d.x) > 6) {
+                d.on = true;
+                (e.currentTarget as HTMLElement).setPointerCapture(d.id);
+              }
+              if (d.on) setSel(clampSel(d.s - (e.clientX - d.x) / 140));
+            }
+          }}
+          onPointerUp={() => {
+            if (drag.current?.on) setSel((v) => Math.round(v));
+            drag.current = null;
+          }}
+          onPointerLeave={() => {
+            rx.set(0);
+            ry.set(0);
+          }}
+        >
+          <motion.div style={{ rotateX: rx, rotateY: ry, transformStyle: "preserve-3d" }} className="absolute inset-0">
+            {/* The time axis itself, running away from you. */}
+            <div aria-hidden className="absolute left-1/2 top-1/2 h-px w-[2400px] -translate-x-1/2 [transform:rotateY(90deg)] bg-[linear-gradient(90deg,transparent,rgba(124,255,196,0.5),transparent)]" />
+            {MOMENTS.map((mm, k) => (
+              <Moment key={mm.id} k={k} pos={pos} radius={radius} active={k === near} onEnter={() => onJump(mm.id)} />
+            ))}
+          </motion.div>
+        </div>
+        {/* The time rail: every moment by name; the marker tracks where you are. */}
+        <nav
+          aria-label="Time: choose a moment"
+          onKeyDown={(e) => {
+            if (e.key === "ArrowDown" || e.key === "ArrowRight") step(1);
+            else if (e.key === "ArrowUp" || e.key === "ArrowLeft") step(-1);
+            else return;
+            e.preventDefault();
+          }}
+          className="relative flex gap-x-5 overflow-x-auto px-1 sm:w-64 sm:flex-col sm:gap-0 sm:border-s sm:border-white/10 sm:ps-5"
+        >
           {MOMENTS.map((mm, k) => (
-            <Moment key={mm.id} k={k} pos={pos} radius={radius} active={k === near} onEnter={() => onJump(mm.id)} />
-          ))}
-        </motion.div>
-      </div>
-      <div className="mx-auto mt-3 w-[min(86vw,560px)]">
-        <input
-          type="range"
-          min={0}
-          max={N - 1}
-          step={0.01}
-          value={sel}
-          aria-label="Time: choose a chapter"
-          aria-valuetext={`${m.index} ${m.title}, ${m.when}`}
-          onChange={(e) => setSel(Number(e.target.value))}
-          onPointerUp={() => setSel((v) => Math.round(v))}
-          onKeyUp={() => setSel((v) => Math.round(v))}
-          className="time-axis w-full"
-        />
-        <div className="mt-2 flex justify-between font-mono text-[9px] uppercase tracking-[0.25em] text-white/40">
-          {MOMENTS.map((mm, k) => (
-            <button key={mm.id} type="button" onClick={() => setSel(k)} className="pointer-events-auto transition hover:text-white focus-visible:text-white focus-visible:outline-none" style={k === near ? { color: mm.color } : undefined}>
-              {mm.index}
+            <button
+              key={mm.id}
+              type="button"
+              onClick={() => setSel(k)}
+              aria-current={k === near ? "true" : undefined}
+              className="pointer-events-auto flex shrink-0 items-baseline gap-3 py-1.5 text-start transition focus-visible:outline-none"
+            >
+              <span className="font-mono text-[10px] tracking-[0.3em]" style={{ color: k === near ? mm.color : "rgba(255,255,255,0.35)" }}>{mm.index}</span>
+              <span className={`font-display text-[11px] uppercase tracking-[0.28em] transition ${k === near ? "text-white" : "text-white/40 hover:text-white/80"}`}>{mm.title}</span>
+              <span className="ms-auto hidden whitespace-nowrap font-mono text-[9px] tracking-[0.2em] text-white/30 sm:inline">{mm.when}</span>
             </button>
           ))}
-        </div>
+          <motion.span aria-hidden className="absolute -start-px hidden w-px bg-[var(--signal)] shadow-[0_0_8px_var(--signal)] sm:block" style={{ top: useTransform(pos, (v) => `${(v / N) * 100}%`), height: `${100 / N}%` }} />
+        </nav>
       </div>
     </div>
   );

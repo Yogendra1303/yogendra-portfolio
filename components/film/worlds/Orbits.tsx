@@ -119,7 +119,7 @@ export function Orbits() {
     const p = film.progressIn(5);
     const collapse = Math.min(1, Math.max(0, (p - 0.05) / 0.4));
     const k = collapse * collapse * (3 - 2 * collapse);
-    const t = film.time;
+    const t = film.time * 2.6; // a living system, not a diagram
 
     planets.forEach((pl, i) => {
       const m = planetRefs.current[i];
@@ -146,7 +146,7 @@ export function Orbits() {
     swarm.g.getAttribute("position").needsUpdate = true;
 
     if (swarmMat.current) swarmMat.current.uniforms.uOn.value = on * (1 - k * 0.55);
-    if (ringRef.current) ringRef.current.rotation.y += dt * 0.01;
+    if (ringRef.current) ringRef.current.rotation.y += dt * 0.045;
     if (ringMat.current) ringMat.current.opacity = on * (0.15 + k * 0.5);
     orbitMats.current.forEach((m) => m && (m.opacity = on * k * 0.18));
     if (starMat.current) starMat.current.opacity = on;

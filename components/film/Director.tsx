@@ -154,6 +154,14 @@ export function Director() {
     const inTunnel = t > w0 - 0.02 && t < w1 + 0.01 ? Math.sin(Math.PI * Math.min(1, Math.max(0, (t - (w0 - 0.02)) / (w1 + 0.01 - (w0 - 0.02))))) : 0;
     look.copy(lookA).lerp(ahead, Math.min(1, inTunnel * 1.4));
 
+    // Graduation: once the black hole opens it pulls the camera into a slow,
+    // tightening orbit while the chapter plays.
+    if (film.section === 2 && u < CUTS[0].from) {
+      const k = film.holdProgress * Math.min(1, film.bhOpen);
+      dir.subVectors(pos, BLACK_HOLE).applyAxisAngle(UP, 0.5 * k * k);
+      pos.copy(BLACK_HOLE).addScaledVector(dir, 1 - 0.25 * k);
+    }
+
     // Weightless: a slow drift on X and Y that never repeats, wider in
     // turbulence, and gone for a few seconds after the pull breaks (stillness).
     const hold = 1 - Math.min(1, film.speed * 3);

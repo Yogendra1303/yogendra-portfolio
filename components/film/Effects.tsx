@@ -20,7 +20,8 @@ import { Effect, EffectAttribute, ShaderPass } from "postprocessing";
 import * as THREE from "three";
 import { film } from "@/lib/film";
 import { prng } from "@/lib/math";
-import { BLACK_HOLE, DESTINATION, ORBITS } from "@/lib/stage";
+import { BLACK_HOLE, DESTINATION, EARTH_1, EARTH_2, EARTH_RADIUS, ORBITS } from "@/lib/stage";
+import { scoreClick } from "@/lib/score";
 
 const SHARDS = 14;
 
@@ -42,21 +43,36 @@ const shardGLSL = /* glsl */ `
 const fractureFrag = /* glsl */ `
   uniform float uFracture;
   uniform vec3 uTint;
-  uniform vec3 uMass; // crisis mass: screen xy, strength
+  uniform vec3 uMass; // mass: screen xy, strength
+  uniform float uEmit; // 0: a dark horizon; 1: a wormhole that emits light
+  uniform vec4 uClick; // a click's wormhole: screen xy, strength, size
   ${shardGLSL}
 
-  // Gravity: light is pulled toward an unseen mass and wrapped around it,
-  // with a dark core where nothing escapes. Everything on the canvas bends.
-  vec2 gravityWarp(vec2 uv) {
-    if (uMass.z < 0.001) return uv;
+  // Gravity: light is pulled toward a mass and wrapped around it, twisting.
+  vec2 warpAt(vec2 uv, vec2 C, float strength, float size, float swirl) {
+    if (strength < 0.001) return uv;
     vec2 asp = vec2(aspect, 1.0);
-    vec2 d = (uv - uMass.xy) * asp;
+    vec2 d = (uv - C) * asp;
     float r = length(d) + 1e-4;
-    float rE = 0.16 * uMass.z;
+    float rE = size * strength;
     float pull = rE * rE / (r * r + rE * rE * 0.35);
     vec2 t = vec2(-d.y, d.x) / r;
-    d -= d / r * pull * r * 0.9 - t * pull * 0.06;
-    return uMass.xy + d / asp;
+    d -= d / r * pull * r * 0.9 - t * pull * swirl;
+    return C + d / asp;
+  }
+  vec2 gravityWarp(vec2 uv) {
+    uv = warpAt(uv, uMass.xy, uMass.z, 0.16, 0.06 + uEmit * 0.25);
+    return warpAt(uv, uClick.xy, uClick.z, uClick.w, 0.3);
+  }
+  // A wormhole that throws light out: a white-hot core, a ring, turning rays.
+  vec3 emission(vec2 uv, vec2 C, float strength, float size) {
+    vec2 d = (uv - C) * vec2(aspect, 1.0);
+    float r = length(d);
+    float rE = size * strength + 1e-4;
+    float core = exp(-pow(r / (rE * 0.32), 2.0));
+    float ring = exp(-pow((r - rE * 0.8) / (rE * 0.1), 2.0));
+    float rays = pow(abs(sin(atan(d.y, d.x) * 9.0 + time * 0.7 - r * 28.0)), 16.0) * exp(-r / (rE * 1.4));
+    return vec3(1.0, 0.84, 0.6) * (core * 1.5 + ring * 0.55 + rays * 0.4) * strength;
   }
 
   void mainUv(inout vec2 uv) {
@@ -81,12 +97,16 @@ const fractureFrag = /* glsl */ `
   void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
     vec3 c = inputColor.rgb;
     if (uMass.z > 0.001) {
-      vec2 d = (vUv - uMass.xy) * vec2(aspect, 1.0);
-      float r = length(d);
-      float rE = 0.16 * uMass.z;
-      c *= mix(1.0, 0.15, exp(-pow(r / (rE * 0.45), 2.0)) * uMass.z);
-      c += vec3(1.0, 0.75, 0.45) * exp(-pow((r - rE) / (rE * 0.08), 2.0)) * 0.12 * uMass.z;
+      if (uEmit > 0.5) c += emission(vUv, uMass.xy, uMass.z, 0.16);
+      else {
+        vec2 d = (vUv - uMass.xy) * vec2(aspect, 1.0);
+        float r = length(d);
+        float rE = 0.16 * uMass.z;
+        c *= mix(1.0, 0.15, exp(-pow(r / (rE * 0.45), 2.0)) * uMass.z);
+        c += vec3(1.0, 0.75, 0.45) * exp(-pow((r - rE) / (rE * 0.08), 2.0)) * 0.12 * uMass.z;
+      }
     }
+    if (uClick.z > 0.001) c += emission(vUv, uClick.xy, uClick.z, uClick.w) * 0.8;
     if (uFracture > 0.001) {
       vec4 s = shardAt((vUv - 0.5) * vec2(aspect, 1.0));
       // Hairline cracks that catch the light only near the peak of the shift.
@@ -109,6 +129,8 @@ class FractureEffect extends Effect {
         ["uFracture", new THREE.Uniform(0)],
         ["uTint", new THREE.Uniform(new THREE.Color("#2bff88"))],
         ["uMass", new THREE.Uniform(new THREE.Vector3(0.5, 0.5, 0))],
+        ["uEmit", new THREE.Uniform(1)],
+        ["uClick", new THREE.Uniform(new THREE.Vector4(0.5, 0.5, 0, 0.1))],
         ["uShard", new THREE.Uniform(seeds.map((s) => s.clone()))],
       ]),
     });
@@ -361,12 +383,38 @@ export function Effects() {
     // The final climax: after contact the whole frame bends around a dark
     // centre, then cracks open into the tesseract.
     const horizon = film.horizon;
+    fracture.uniforms.get("uEmit")!.value = 1;
     if (mz < 0.02 && horizon > 0.02) {
       mass.x = 0.5;
       mass.y = 0.5;
       mz = Math.min(1.4, horizon * 1.4);
+      fracture.uniforms.get("uEmit")!.value = 0;
     }
     mass.z = mz;
+
+    // A click opens a wormhole where it lands: a big one inside a globe, a small one anywhere else.
+    const click = fracture.uniforms.get("uClick")!.value as THREE.Vector4;
+    const age = film.clock - film.clickAt;
+    if (age < 1.6 && !film.reduced) {
+      if (film.clickBig < 0) {
+        film.clickBig = 0;
+        const cam = camera as THREE.PerspectiveCamera;
+        for (const [pos, ch] of [[EARTH_1, 3], [EARTH_2, 6]] as const) {
+          if (film.presence(ch) < 0.4) continue;
+          view.copy(pos).applyMatrix4(camera.matrixWorldInverse);
+          if (view.z >= 0) continue;
+          v.copy(pos).project(camera);
+          const rad = (EARTH_RADIUS / -view.z) / Math.tan((cam.fov * Math.PI) / 360) * 0.5;
+          const dx = (film.clickX - (v.x * 0.5 + 0.5)) * (size.width / size.height);
+          const dy = film.clickY - (v.y * 0.5 + 0.5);
+          if (Math.hypot(dx, dy) < rad) film.clickBig = 1;
+        }
+        scoreClick(film.clickBig === 1);
+      }
+      const big = film.clickBig === 1;
+      const env = Math.min(1, age / 0.12) * Math.exp(-age * 2.2);
+      click.set(film.clickX, film.clickY, (big ? 1 : 0.5) * env, big ? 0.2 : 0.07);
+    } else click.z = 0;
     su.uSeed.value = calm ? (film.clock * 13.7) % 97 : 0;
     (su.uTint.value as THREE.Color).copy(light.tint);
 

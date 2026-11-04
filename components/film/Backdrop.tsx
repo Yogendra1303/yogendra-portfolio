@@ -279,7 +279,7 @@ const nebulaFrag = /* glsl */ `
       float arcs = smoothstep(0.42, 0.85, noise(vec3(cos(ang) * 1.7, sin(ang) * 1.7, float(i) * 7.0 + uTime * 0.03)));
       float ring = exp(-pow((th - te) / (te * 0.05), 2.0)) * (0.15 + 0.85 * arcs);
       col += vec3(1.0, 0.74, 0.46) * ring * 0.14;
-      col *= mix(1.0, 0.5, exp(-pow(th / (te * 0.35), 2.0)));
+      col += vec3(1.0, 0.82, 0.58) * exp(-pow(th / (te * 0.3), 2.0)) * 0.22;
     }
     gl_FragColor = vec4(col, 1.0);
   }

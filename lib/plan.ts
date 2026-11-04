@@ -9,7 +9,7 @@
 import { chapters, type Shot } from "@/content/story";
 
 const WEIGHT: Record<Shot["kind"], number> = {
-  slate: 1.5, // title cards fade in and out slowly, so they get more room
+  slate: 1.15, // title cards fade in and out slowly, so they get a little more room
   say: 0.8,
   credit: 1.05,
   figure: 0.95,
@@ -17,9 +17,9 @@ const WEIGHT: Record<Shot["kind"], number> = {
   roll: 1.25,
   index: 1.6,
 };
-const SHOT_VH = 36;
-const TRAVEL_VH = 88;
-const FINALE_VH = 440; // end credits, contact, then the index
+const SHOT_VH = 30;
+const TRAVEL_VH = 62;
+const FINALE_VH = 380; // end credits, contact, then the index
 
 export type Window = { a: number; b: number };
 export type SectionPlan = { heightVh: number; holdEnd: number; shots: Window[] };
