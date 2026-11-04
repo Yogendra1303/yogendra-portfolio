@@ -30,11 +30,6 @@ function timecode(sec: number) {
   const h = Math.floor(sec / 3600);
   return `${pad(h)}:${pad(m)}:${pad(s)}:${pad(f)}`;
 }
-const DIGITS = "0123456789";
-const hash = (n: number) => {
-  const s = Math.sin(n * 127.1 + 311.7) * 43758.5453;
-  return s - Math.floor(s);
-};
 
 /** A lens-shaped displacement map: light (and words) pulled in toward the centre and twisted. */
 function lensMap() {
@@ -115,10 +110,8 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
           shownYear = yr;
           glitchUntil = now + 170;
         }
-        if (now < glitchUntil && !film.reduced) {
-          const k = Math.floor(now / 40);
-          yearNum.current.textContent = [0, 1, 2, 3].map((d) => (hash(k * 4 + d) < 0.5 ? String(yr)[d] : DIGITS[Math.floor(hash(k * 7 + d) * 10)])).join("");
-        } else yearNum.current.textContent = String(yr);
+        yearNum.current.textContent = String(yr);
+        yearNum.current.style.opacity = now < glitchUntil && !film.reduced ? String(0.35 + 0.65 * (1 - (glitchUntil - now) / 170)) : "1";
         yearNext.current.textContent = `${chapters[i + 1].index} · ${chapters[i + 1].title}`;
       }
 

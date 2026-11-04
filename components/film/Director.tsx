@@ -157,9 +157,11 @@ export function Director() {
     // Graduation: once the black hole opens it pulls the camera into a slow,
     // tightening orbit while the chapter plays.
     if (film.section === 2 && u < CUTS[0].from) {
-      const k = film.holdProgress * Math.min(1, film.bhOpen);
-      dir.subVectors(pos, BLACK_HOLE).applyAxisAngle(UP, 0.5 * k * k);
-      pos.copy(BLACK_HOLE).addScaledVector(dir, 1 - 0.25 * k);
+      const h = film.holdProgress;
+      const k = h * h * (3 - 2 * h) * film.bhOpen;
+      dir.subVectors(pos, BLACK_HOLE).applyAxisAngle(UP, 0.38 * k);
+      pos.copy(BLACK_HOLE).addScaledVector(dir, 1 - 0.28 * k);
+      pos.y -= 1.2 * k; // sinking a little below the disk, looking up into it
     }
 
     // Weightless: a slow drift on X and Y that never repeats, wider in
@@ -182,7 +184,7 @@ export function Director() {
     pos.lerp(look, 0.16 * creep * (1 - smooth(0, 1, travelled)) * drift);
 
     // Crisis cut-in: snap to a close-up of the moment, then a long release.
-    const want = !film.reduced && film.crisisTarget >= 0.5;
+    const want = !film.reduced && film.crisisTarget >= 0.5 && film.section >= 3;
     if (want && !closeOn.current) {
       closeOn.current = true;
       film.close = 1;
@@ -224,8 +226,9 @@ export function Director() {
     }
 
     // Sudden violence: the jolt at a crisis onset, then a heavy tremor.
-    const jolt = film.reduced ? 0 : Math.exp(-film.impact * 3.2) * Math.min(1, film.crisis * 2);
-    const trem = film.reduced ? 0 : film.crisis * 0.09 + jolt * 0.55;
+    const violent = film.reduced || film.section <= 2 ? 0 : 1; // the black hole pulls; it does not shake
+    const jolt = violent * Math.exp(-film.impact * 3.2) * Math.min(1, film.crisis * 2);
+    const trem = violent * (film.crisis * 0.09 + jolt * 0.55);
     const c = film.clock;
     const sx = Math.sin(c * 23.1) * 0.6 + Math.sin(c * 51.7) * 0.4;
     const sy = Math.sin(c * 19.3 + 1.7) * 0.6 + Math.sin(c * 43.9) * 0.4;

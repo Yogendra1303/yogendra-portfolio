@@ -71,7 +71,7 @@ export const chapters: Chapter[] = [
       { kind: "say", text: "Nobody asks which line you want." },
       { kind: "say", text: "They hand you one. Early." },
       { kind: "say", text: "Study this. Become that. Never leave the line." },
-      { kind: "slate", slug: "A career in nine chapters", title: "Yogendra Singh Kapkoti" },
+      { kind: "slate", slug: "A career, told as a film", title: "Yogendra Singh Kapkoti" },
     ],
   },
   {
@@ -91,14 +91,14 @@ export const chapters: Chapter[] = [
   {
     id: "deflection",
     index: "02",
-    title: "A First Vector",
+    title: "First Vector",
     when: "2014 – 2017",
     year: 2014,
     side: "right",
     color: "#ffb35c",
     shots: [
-      { kind: "slate", slug: "Graduation · University of Mysore · 2014", title: "A First Vector" },
-      { kind: "say", text: "Then something pulled harder than the plan.", crisis: 0.6 },
+      { kind: "slate", slug: "Graduation · University of Mysore · 2014", title: "First Vector" },
+      { kind: "say", text: "Then something pulled harder than the plan.", crisis: 0.35 },
       { kind: "say", text: "I crossed from science into business." },
       { kind: "credit", role: "Business student", org: "University of Mysore · Bachelor of Business Administration (Operations)", when: "2014 – 2017" },
       { kind: "say", text: "Before the degree reached my hands, I was already gone.", em: true },

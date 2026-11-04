@@ -89,7 +89,8 @@ export function Lattice() {
   const uniforms = useMemo(() => ({ uOn: { value: 0 }, uTime: { value: 0 }, uCol: { value: new THREE.Color("#8fb8ff") }, uFar: { value: HALF * 1.1 } }), []);
 
   useFrame(({ camera }) => {
-    const on = Math.max(film.fracture, film.tesseract * 0.85);
+    // At the very end it frames the time index; on a phone it stays faint behind the list.
+    const on = Math.max(film.fracture, film.tesseract * (window.innerWidth < 640 ? 0.3 : 0.85));
     if (!g.current || !mat.current) return;
     g.current.visible = on > 0.002;
     if (!g.current.visible) return;

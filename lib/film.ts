@@ -136,11 +136,11 @@ class Film {
     return 0;
   }
 
-  /** How open the black hole is, 0..~1.08 (it tears open with an overshoot). */
+  /** How open the black hole is, 0..1 (it opens smoothly as the chapter plays). */
   get bhOpen() {
     if (this.u > 2.2) return 1;
-    const x = clamp01((this.progressIn(2) - 0.14) / 0.24);
-    return x <= 0 ? 0 : Math.min(1.08, 1 - Math.pow(1 - x, 3) + Math.sin(x * Math.PI) * 0.08);
+    const x = clamp01((this.progressIn(2) - 0.1) / 0.32);
+    return x * x * (3 - 2 * x);
   }
 
   /** How present chapter i is right now, 0..1 (1 when the camera holds on it). */

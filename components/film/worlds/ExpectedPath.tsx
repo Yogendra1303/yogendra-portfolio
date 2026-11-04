@@ -23,7 +23,8 @@ const c01 = (x: number) => Math.min(1, Math.max(0, x));
 /** Shared drivers for this world, scrubbed by chapter 02's scroll. */
 function drivers() {
   const p = film.progressIn(2);
-  const tremor = ease(c01((p - 0.02) / 0.3)) * (film.reduced ? 0.3 : 1);
+  // "tremor" is now the bend: how far the hole has pulled the line toward it.
+  const tremor = ease(c01((p - 0.04) / 0.5));
   const pull = ease(c01((p - 0.22) / 0.3));
   return { tremor, pull };
 }
@@ -32,18 +33,20 @@ const vert = /* glsl */ `
   uniform float uTime;
   uniform float uTremor;
   uniform float uSeed;
+  uniform vec3 uBH;
   varying float vZ;
   varying vec3 vNormalV;
   varying vec3 vViewDir;
   varying float vDepth;
   void main() {
-    float s = clamp((position.z - ${Z0.toFixed(1)}) / ${(Z1 - Z0).toFixed(1)}, 0.0, 1.0);
-    float env = sin(3.14159265 * s);
-    float t = uTime;
-    float y = sin(s * 23.0 + t * 31.0) * 0.55 + sin(s * 7.0 - t * 13.0) * 0.35 + sin(s * 61.0 + t * 57.0) * 0.1;
-    float x = cos(s * 19.0 - t * 27.0) * 0.5 + sin(s * 5.0 + t * 9.0) * 0.5;
-    float own = sin(s * 90.0 + t * 40.0 + uSeed * 17.0) * 0.12;
-    vec3 p = position + vec3((x - own) * env * uTremor, (y + own) * env * uTremor, 0.0);
+    // Gravity, not noise: the line sags toward the hole in one smooth arc,
+    // strongest where it passes closest, and the strands spread a little.
+    vec3 toBH = uBH - position;
+    float near = exp(-pow((position.z - uBH.z) / 34.0, 2.0));
+    float bend = uTremor * 6.2 * near;
+    vec3 p = position + normalize(toBH) * min(bend, length(toBH) * 0.7);
+    p.xy += (position.xy) * near * uTremor * 1.6;
+    p.y += sin(position.z * 0.08 + uTime * 0.6 + uSeed) * 0.04 * near * uTremor;
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
     vZ = position.z;
     vDepth = -mv.z;
@@ -67,7 +70,7 @@ const frag = /* glsl */ `
     float rim = pow(1.0 - abs(dot(vNormalV, vViewDir)), 1.5);
     float bands = pow(fract(-vZ * 0.06 - uTime * 0.5 + uSeed), 14.0);
     float fine = pow(fract(-vZ * 0.31 - uTime * 1.6 + uSeed * 3.0), 26.0) * 0.6;
-    float flick = 1.0 + uTremor * (hash(floor(uTime * 24.0) + uSeed) - 0.5) * 1.4;
+    float flick = 1.0 + uTremor * 0.25 * sin(uTime * 1.3 + uSeed * 3.0);
     float glow = (0.4 + rim * 0.9 + bands * 1.5 + fine) * flick;
     // Fade into the far distance so the line reads as endless.
     float far = 1.0 - smoothstep(120.0, 520.0, vDepth);
@@ -113,7 +116,7 @@ function Strands() {
     for (const m of mats.current) {
       if (!m) continue;
       m.uniforms.uTime.value = film.time;
-      m.uniforms.uTremor.value = tremor * 0.38;
+      m.uniforms.uTremor.value = tremor;
       m.uniforms.uOpacity.value = (m.userData.core ? 0.85 : 0.5) * remaining;
     }
   });
@@ -131,6 +134,7 @@ function Strands() {
             uniforms={{
               uTime: { value: 0 },
               uTremor: { value: 0 },
+              uBH: { value: BLACK_HOLE.clone() },
               uOpacity: { value: 1 },
               uSeed: { value: s.seed },
               uColor: { value: new THREE.Color("#2bff88") },
@@ -278,8 +282,14 @@ function Light({ count = 3200 }) {
         z[i] -= speed[i] * dt;
         if (z[i] < PZ1) z[i] += PZ0 - PZ1;
         const s = (z[i] - Z0) / (Z1 - Z0);
-        if (s > 0 && s < 1) tremorOffset(s, film.time, tremor * 0.38, tmp);
-        else tmp[0] = tmp[1] = 0;
+        // Ride the same smooth bend as the strands.
+        const near = Math.exp(-Math.pow((z[i] - bz) / 34, 2));
+        const bend = tremor * 6.2 * near;
+        const d = Math.hypot(bx, by, bz - z[i]) || 1;
+        const k = Math.min(bend, d * 0.7) / d;
+        tmp[0] = by * k;
+        tmp[1] = bx * k;
+        void s;
         const a = ang[i] + z[i] * 0.9 + film.time * 0.6;
         P[i3] = tmp[1] + Math.cos(a) * rad[i];
         P[i3 + 1] = tmp[0] + Math.sin(a) * rad[i];
@@ -336,7 +346,6 @@ export function ExpectedPath() {
   return (
     <group>
       <Strands />
-      <Lightning />
       <Light />
     </group>
   );

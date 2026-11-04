@@ -62,7 +62,7 @@ const fractureFrag = /* glsl */ `
     return C + d / asp;
   }
   vec2 gravityWarp(vec2 uv) {
-    uv = warpAt(uv, uMass.xy, uMass.z, 0.16, 0.06 + uEmit * 0.25);
+    uv = warpAt(uv, uMass.xy, uMass.z, 0.16, 0.06 + uEmit * 0.12);
     return warpAt(uv, uClick.xy, uClick.z, uClick.w, 0.3);
   }
   // A wormhole that throws light out: a white-hot core, a ring, turning rays.
@@ -72,8 +72,8 @@ const fractureFrag = /* glsl */ `
     float rE = size * strength + 1e-4;
     float core = exp(-pow(r / (rE * 0.32), 2.0));
     float ring = exp(-pow((r - rE * 0.8) / (rE * 0.1), 2.0));
-    float rays = pow(abs(sin(atan(d.y, d.x) * 9.0 + time * 0.7 - r * 28.0)), 16.0) * exp(-r / (rE * 1.4));
-    return vec3(1.0, 0.84, 0.6) * (core * 1.5 + ring * 0.55 + rays * 0.4) * strength;
+    float rays = pow(abs(sin(atan(d.y, d.x) * 6.0 + time * 0.35 - r * 9.0)), 24.0) * exp(-r / (rE * 0.9));
+    return vec3(1.0, 0.84, 0.6) * (core * 1.2 + ring * 0.4 + rays * 0.14) * strength;
   }
 
   void mainUv(inout vec2 uv) {
@@ -194,14 +194,7 @@ const opticsFrag = /* glsl */ `
     vec3 f = vec3(0.0);
     f += vec3(0.55, 0.75, 1.0) * exp(-abs(d.y) * 340.0) * exp(-abs(d.x) * 1.6) * 0.5;
     f += uFlareTint * exp(-length(d) * 9.0) * 0.18;
-    vec2 axis = vec2(0.5) - L;
-    for (int i = 0; i < 4; i++) {
-      float k = 0.45 + float(i) * 0.38;
-      vec2 g = (uv - (L + axis * k * 2.0)) * asp;
-      float rad = 0.025 + float(i) * 0.018;
-      float disc = smoothstep(rad, rad * 0.6, length(g));
-      f += mix(uFlareTint, vec3(0.5, 0.8, 1.0), float(i) / 3.0) * disc * (0.05 - float(i) * 0.008);
-    }
+
     return f * uFlare.z;
   }
   void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {

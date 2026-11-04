@@ -73,16 +73,16 @@ export default function Film() {
       }
     }
     // Every click opens a little wormhole where it lands (Effects.tsx).
-    const click = (e: PointerEvent) => {
+    const click = (e: MouseEvent) => {
       film.clickX = e.clientX / window.innerWidth;
       film.clickY = 1 - e.clientY / window.innerHeight;
       film.clickAt = film.clock;
       film.clickBig = -1;
       film.clickDark = false;
     };
-    window.addEventListener("pointerdown", click);
+    window.addEventListener("click", click, true);
     return () => {
-      window.removeEventListener("pointerdown", click);
+      window.removeEventListener("click", click, true);
       lenis.current?.destroy();
     };
   }, []);
@@ -118,7 +118,7 @@ export default function Film() {
     <>
       <div className="fixed inset-0 z-0 bg-black" aria-hidden>
         <Canvas
-          dpr={[1, 1.75]}
+          dpr={typeof window !== "undefined" && (window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768) ? [1, 1.3] : [1, 1.75]}
           camera={{ position: [6.5, 2.2, 34], fov: 48, near: 0.05, far: 4000 }}
           gl={{ antialias: false, powerPreference: "high-performance", toneMapping: THREE.ACESFilmicToneMapping }}
         >

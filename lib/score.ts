@@ -9,7 +9,9 @@
  * Over it, the drama, timed like the reference sequences (Gravity's
  * detachment, the Interstellar wormhole, a singularity sound reel): sub-bass
  * swells slowly, risers lead into impacts, impacts dip everything for a beat.
- * Everything is driven by the scroll and the story:
+ * A melody floats over it: a slow, sparse line of soft bell-piano notes drawn
+ * from each chapter's chord, phrase by phrase, never the same twice, slowing
+ * when time dilates. Everything is driven by the scroll and the story:
  * - Underneath: a 40 Hz sub, and a master filter that opens as you move
  *   through the film (dark at the start, open at the end).
  * - Between chapters: a high riser scrubbed by the scroll, cut to silence
@@ -70,6 +72,55 @@ let crisisHeld = 0;
 let resolved = false;
 let inTunnel = false;
 let stopTimer = 0;
+let nextNote = 0;
+let phraseLeft = 0;
+let melodyIdx = 4;
+
+/** One note of the melody: a soft bell-piano (sine body, faint octave, long ring). */
+function note(f: number, at: number, level: number) {
+  if (!ctx) return;
+  const c = ctx;
+  const g = gain(c, 0);
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(level, at + 0.012);
+  g.gain.exponentialRampToValueAtTime(level * 0.35, at + 0.5);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + 3.4);
+  const lp = band(c, "lowpass", 2400, 0.4);
+  g.connect(lp);
+  lp.connect(mix);
+  lp.connect(verb);
+  [
+    [1, "sine", 1],
+    [2, "triangle", 0.18],
+    [3.01, "sine", 0.05],
+  ].forEach(([m, type, lv]) => {
+    const o = c.createOscillator();
+    o.type = type as OscillatorType;
+    o.frequency.value = f * (m as number);
+    const og = gain(c, lv as number);
+    o.connect(og).connect(g);
+    o.start(at);
+    o.stop(at + 3.5);
+  });
+}
+
+/** The melody: phrases that wander stepwise through the chapter's chord, then rest. */
+function melody(now: number, chordHz: number[], dilation: number) {
+  if (dilation < 0.03) {
+    nextNote = now + 0.5; // outside time, the bells carry it
+    return;
+  }
+  if (now < nextNote - 0.1) return;
+  // The note pool: the chord two and three octaves up, sorted, so steps sound like a tune.
+  const pool = [...chordHz.map((f) => f * 4), ...chordHz.map((f) => f * 8)].filter((f) => f < 1400).sort((a, b) => a - b);
+  if (phraseLeft <= 0) phraseLeft = 4 + Math.floor(rnd() * 3);
+  melodyIdx = Math.min(pool.length - 1, Math.max(0, melodyIdx + [-1, 1, 1, -1, 2, -2, 0][Math.floor(rnd() * 7)]));
+  const at = Math.max(now + 0.02, nextNote);
+  note(pool[melodyIdx], at, 0.05 + rnd() * 0.02);
+  phraseLeft -= 1;
+  const slow = 1 / Math.max(0.35, dilation);
+  nextNote = at + (phraseLeft > 0 ? 0.85 + rnd() * 0.5 : 3 + rnd() * 2.5) * slow;
+}
 
 function noise(c: AudioContext, seconds: number, brown: boolean) {
   const r = prng(brown ? 41 : 17);
@@ -259,7 +310,7 @@ function braam(root: number, level = 0.5) {
   f.type = "lowpass";
   f.Q.value = 1.4;
   f.frequency.setValueAtTime(120, t);
-  f.frequency.exponentialRampToValueAtTime(1500, t + 0.12);
+  f.frequency.exponentialRampToValueAtTime(820, t + 0.16);
   f.frequency.exponentialRampToValueAtTime(160, t + 4.2);
   const g = gain(c, 0);
   g.gain.setValueAtTime(0.0001, t);
@@ -272,7 +323,7 @@ function braam(root: number, level = 0.5) {
     const o = c.createOscillator();
     o.type = k === 4 ? "sine" : "sawtooth";
     o.frequency.value = root * m;
-    const og = gain(c, k === 4 ? 1.2 : 0.3);
+    const og = gain(c, k === 4 ? 1.1 : 0.2);
     o.connect(og).connect(f);
     o.start(t);
     o.stop(t + 5.6);
@@ -314,7 +365,7 @@ function hit({ low = 60, lowLevel = 0.6, crunch = 0.4, pan = 0, decay = 0.9, del
 /** A crack of glass and a shimmer: the frame breaking into another dimension. */
 function crack() {
   if (!ctx) return;
-  hit({ low: 50, lowLevel: 0.5, crunch: 0.6, decay: 1.2 });
+  hit({ low: 50, lowLevel: 0.45, crunch: 0.28, decay: 1.2 });
   const c = ctx;
   const t = c.currentTime + 0.01;
   [2093, 2794, 3520, 4186].forEach((f) => {
@@ -322,7 +373,7 @@ function crack() {
     o.frequency.value = f;
     const g = gain(c, 0);
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.05, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.03, t + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, t + 2.6);
     o.connect(g).connect(verb);
     o.start(t);
@@ -395,6 +446,8 @@ export function startScore() {
   lastHit = film.hit;
   lastCut = film.sinceCut;
   lastBreak = film.breakaway;
+  nextNote = c.currentTime + 1.4;
+  phraseLeft = 0;
 }
 
 export function stopScore() {
@@ -436,8 +489,8 @@ export function updateScore() {
   set(sub.a.frequency, 40 - 13 * gravity, 0.8);
   set(sub.b.frequency, 80 - 26 * gravity, 0.8);
   // The master filter opens as the story moves forward, and with speed.
-  set(tone.frequency, 2200 + 5500 * story + 3000 * s, 0.4);
-  set(air.gain.gain, 0.035 + 0.12 * s, 0.25);
+  set(tone.frequency, 1600 + 3600 * story + 1800 * s, 0.4);
+  set(air.gain.gain, 0.022 + 0.08 * s, 0.25);
 
   // The bed: a chord per chapter, always sounding; darker under pressure,
   // brighter with speed, lifted by the shimmer.
@@ -458,7 +511,8 @@ export function updateScore() {
   set(pad.filter.frequency, 900 + 1100 * story + 900 * s - 350 * crisis - 300 * gravity, 0.6);
   for (const b of pad.banks) b.osc.forEach((o, k) => set(o.detune, (k % 2 ? 6 : -6) - 50 * gravity + (k % 2 ? 1 : -1) * 18 * crisis, 0.6));
   set(pad.shimmer.gain, 0.008 + 0.006 * story, 1);
-  set(air.band.frequency, 140 + 1100 * story + 900 * s, 0.4);
+  melody(now, CHORDS[want], film.dilation);
+  set(air.band.frequency, 120 + 700 * story + 600 * s, 0.4);
 
   // Between chapters: a riser scrubbed by the scroll, then silence before arrival.
   const i = Math.floor(u);
@@ -469,9 +523,9 @@ export function updateScore() {
   if (i === 2 && u < CUTS[0].from) rise = smooth(2.0, CUTS[0].from, u) * 0.8; // the fall whines
   // The final horizon: a riser into a beat of silence, then the crack into the tesseract.
   if (film.section === chapters.length - 1) rise = smooth(0.74, 0.845, film.frac) * (1 - smooth(0.845, 0.855, film.frac));
-  set(riser.gain.gain, 0.05 * rise, 0.12);
-  set(riser.band.frequency, 1500 + 6500 * rise, 0.15);
-  set(riser.oscGain.gain, 0.012 * rise, 0.12);
+  set(riser.gain.gain, 0.035 * rise, 0.12);
+  set(riser.band.frequency, 900 + 3200 * rise, 0.15);
+  set(riser.oscGain.gain, 0.0, 0.12);
   set(riser.osc.frequency, 440 + 1400 * rise, 0.15);
 
   // Turbulence: a high swell that grows for as long as the crisis lasts.
@@ -499,7 +553,7 @@ export function updateScore() {
     else if (film.cutKind === 1) crack();
   }
   lastCut = film.sinceCut;
-  if (film.hit < lastHit && film.hit < 0.3) hit({ low: 55 + rnd() * 25, lowLevel: 0.45, crunch: 0.35, pan: rnd() * 1.6 - 0.8, decay: 0.7 });
+  if (film.hit < lastHit && film.hit < 0.3) hit({ low: 55 + rnd() * 25, lowLevel: 0.4, crunch: 0.16, pan: rnd() * 1.6 - 0.8, decay: 0.7 });
   lastHit = film.hit;
   if (film.breakaway > 0.95 && lastBreak < 0.95) {
     // The pull breaks: everything but a breath drops away.

@@ -116,10 +116,12 @@ export function TimeGrid({ onJump, live }: { onJump: (id: string) => void; live:
   const step = (d: number) => setSel((v) => clampSel(Math.round(v) + d));
   return (
     <div ref={root} data-lenis-prevent className={`w-full max-w-6xl ${live ? "pointer-events-auto" : "pointer-events-none"}`}>
-      <p className="text-center font-mono text-[10px] uppercase tracking-[0.55em] text-white/55">Enter any moment · scroll or drag through time</p>
+      <p className="text-center font-mono text-[10px] uppercase tracking-[0.55em] text-white/55">
+        Enter any moment<span className="hidden sm:inline"> · scroll or drag through time</span>
+      </p>
       <div className="mt-2 flex flex-col gap-4 sm:flex-row sm:items-center">
         <div
-          className="relative h-[30vh] flex-1 cursor-grab touch-pan-y select-none active:cursor-grabbing sm:h-[36vh] [perspective:900px]"
+          className="relative hidden h-[36vh] flex-1 cursor-grab touch-pan-y select-none active:cursor-grabbing sm:block [perspective:900px]"
           onPointerDown={(e) => {
             // A press only becomes a drag once it moves, so moments stay clickable.
             drag.current = { x: e.clientX, s: pos.get(), id: e.pointerId, on: false };
@@ -165,7 +167,7 @@ export function TimeGrid({ onJump, live }: { onJump: (id: string) => void; live:
             else return;
             e.preventDefault();
           }}
-          className="relative flex gap-x-5 overflow-x-auto px-1 sm:w-[21rem] sm:flex-none sm:flex-col sm:gap-0 sm:border-s sm:border-white/10 sm:ps-5"
+          className="relative mx-auto flex w-full max-w-sm flex-col px-1 sm:w-[21rem] sm:max-w-none sm:flex-none sm:border-s sm:border-white/10 sm:ps-5"
         >
           {MOMENTS.map((mm, k) => (
             <button
@@ -176,11 +178,11 @@ export function TimeGrid({ onJump, live }: { onJump: (id: string) => void; live:
               onFocus={() => setSel(k)}
               aria-current={k === near ? "true" : undefined}
               aria-label={`Go to ${mm.index}: ${mm.title}, ${mm.when}`}
-              className="pointer-events-auto flex shrink-0 items-baseline gap-3 py-1.5 text-start transition focus-visible:outline-none"
+              className="pointer-events-auto flex items-baseline gap-3 border-t border-white/10 py-2.5 text-start transition focus-visible:outline-none sm:border-0 sm:py-1.5"
             >
               <span className="font-mono text-[10px] tracking-[0.3em]" style={{ color: k === near ? mm.color : "rgba(255,255,255,0.35)" }}>{mm.index}</span>
               <span className={`whitespace-nowrap font-display text-[11px] uppercase tracking-[0.2em] transition ${k === near ? "text-white" : "text-white/40 hover:text-white/80"}`}>{mm.title}</span>
-              <span className="ms-auto hidden whitespace-nowrap font-mono text-[9px] tracking-[0.2em] text-white/30 sm:inline">{mm.when}</span>
+              <span className="ms-auto whitespace-nowrap font-mono text-[9px] tracking-[0.2em] text-white/30">{mm.when}</span>
             </button>
           ))}
           <motion.span aria-hidden className="absolute -start-px hidden w-px bg-[var(--signal)] shadow-[0_0_8px_var(--signal)] sm:block" style={{ top: useTransform(pos, (v) => `${(v / N) * 100}%`), height: `${100 / N}%` }} />
