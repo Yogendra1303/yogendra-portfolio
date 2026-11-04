@@ -26,7 +26,7 @@
  * - Outside time: high bells, hanging. Contact: the only warm chord.
  */
 import { chapters } from "@/content/story";
-import { CUTS, film } from "@/lib/film";
+import { CUTS, film, HORIZON_U } from "@/lib/film";
 import { prng } from "@/lib/math";
 import { sections } from "@/lib/plan";
 
@@ -590,14 +590,14 @@ export function updateScore() {
   set(swell.band.frequency, 900 + 4500 * held, 0.8);
 
   // The wormhole: silence on the cut, a slam, a crescendo while the years pass, silence on exit.
-  const tunnelNow = u >= CUTS[0].to - 0.001 && u < 2.84;
+  const tunnelNow = u >= HORIZON_U && u < 2.84;
   if (tunnelNow && !inTunnel) {
-    // One beat of silence (the cut), then the slam.
-    hit({ low: 38, lowLevel: 0.9, crunch: 0.2, decay: 1.6, delay: 0.31 });
+    // Through the horizon: a deep slam as the tunnel opens out of the black.
+    hit({ low: 38, lowLevel: 0.9, crunch: 0.2, decay: 1.6, delay: 0.12 });
   }
   if (!tunnelNow && inTunnel && u >= 2.84) silence(0.7, 2.2, 0.45);
   inTunnel = tunnelNow;
-  const tp = tunnelNow ? smooth(CUTS[0].to, 2.84, u) : 0;
+  const tp = tunnelNow ? smooth(HORIZON_U, 2.84, u) : 0;
   set(tunnel.gain.gain, tunnelNow ? 0.12 + 0.5 * tp : 0, tunnelNow ? 0.3 : 0.03);
   set(tunnel.band.frequency, 220 + 2600 * tp, 0.3);
 

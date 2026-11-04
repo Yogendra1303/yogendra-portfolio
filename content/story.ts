@@ -42,6 +42,8 @@ export type Chapter = {
   year?: number;
   /** Year the time counter starts from when leaving this chapter (default: year). */
   rollFrom?: number;
+  /** The subject sits dead centre: title cards go above it (below it on phones). */
+  titleTop?: boolean;
   /** Which side of the frame the words sit on, opposite the subject. */
   side: "left" | "right" | "center";
   color: string;
@@ -112,6 +114,7 @@ export const chapters: Chapter[] = [
     year: 2017,
     rollFrom: 2022,
     coords: "12.97° N  77.59° E",
+    titleTop: true,
     side: "left",
     color: "#2bff88",
     shots: [

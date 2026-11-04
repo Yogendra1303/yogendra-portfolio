@@ -21,7 +21,7 @@ import { useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { chapters } from "@/content/story";
-import { CHAPTERS, CUTS, cutBetween, film } from "@/lib/film";
+import { CHAPTERS, CUTS, cutBetween, film, HORIZON_U } from "@/lib/film";
 import { setLens } from "@/lib/lens";
 import { BH_RADIUS, BLACK_HOLE, cameraCurve, careerCurve, keyLook, ORBITS, tForU, WORMHOLE_T } from "@/lib/stage";
 import { careerReveal, colorAt } from "@/lib/timeline";
@@ -57,6 +57,7 @@ export function Director() {
   const look = useMemo(() => new THREE.Vector3(), []);
   const ahead = useMemo(() => new THREE.Vector3(), []);
   const bhS = useMemo(() => new THREE.Vector3(), []);
+  const rgt = useMemo(() => new THREE.Vector3(), []);
   const pos = useMemo(() => new THREE.Vector3(), []);
   const lookA = useMemo(() => new THREE.Vector3(), []);
   const dir = useMemo(() => new THREE.Vector3(), []);
@@ -115,7 +116,7 @@ export function Director() {
 
     // Gravity: the well deepens as the camera falls toward the horizon.
     const open = film.bhOpen;
-    film.gravity = u < CUTS[0].to ? Math.min(1, smooth(1.55, 2.0, u) * 0.4 * Math.min(1, open) + smooth(2.0, CUTS[0].from, u) * 0.6) : 0;
+    film.gravity = u < HORIZON_U ? Math.min(1, smooth(1.55, 2.0, u) * 0.4 * Math.min(1, open) + smooth(2.0, CUTS[0].from, u) * 0.6) : 0;
     // Time dilation: local time slows near a mass, and under crisis. Inside
     // the tesseract (chapter 07, outside time) it stops: past, present and
     // future are all there at once, and nothing moves but you.
@@ -146,7 +147,10 @@ export function Director() {
     // Look target: blend between chapter look points with an ease.
     const i = Math.min(CHAPTERS - 2, Math.floor(u));
     const f = u - i;
-    const e = f * f * (3 - 2 * f);
+    // Leaving the crystal, the camera keeps it in frame as it tracks past,
+    // then pans forward with the light toward the hole.
+    const g = i === 1 ? Math.min(1, Math.max(0, (f - 0.3) / 0.55)) : f;
+    const e = g * g * (3 - 2 * g);
     lookA.copy(keyLook[i]).lerp(keyLook[Math.min(CHAPTERS - 1, i + 1)], e);
 
     // Inside the wormhole, look down the tunnel instead.
@@ -156,16 +160,32 @@ export function Director() {
     look.copy(lookA).lerp(ahead, Math.min(1, inTunnel * 1.4));
 
     // Graduation: once the black hole opens it pulls the camera into a slow,
-    // tightening orbit while the chapter plays.
-    if (film.section === 2 && u < CUTS[0].from) {
+    // tightening orbit while the chapter plays. In the fall the orbit winds in
+    // with the distance, so the last approach spirals in, as the light did.
+    if (film.section === 2 && u < HORIZON_U) {
       const h = film.holdProgress;
-      const k = h * h * (3 - 2 * h) * film.bhOpen;
+      const k = h * h * (3 - 2 * h) * film.bhOpen * smooth(0.8, 9, pos.distanceTo(BLACK_HOLE));
       dir.subVectors(pos, BLACK_HOLE).applyAxisAngle(UP, 0.38 * k);
       pos.copy(BLACK_HOLE).addScaledVector(dir, 1 - 0.28 * k);
       pos.y -= 1.2 * k; // sinking a little below the disk, looking up into it
     }
     // The fall: the hole swings to dead centre and stays there until the horizon.
-    if (film.section === 2 && u > 2 && u < CUTS[0].to) look.lerp(BLACK_HOLE, smooth(2.0, 2.04, u));
+    if (film.section === 2 && u > 2 && u < HORIZON_U) look.lerp(BLACK_HOLE, smooth(2.0, 2.04, u));
+    // Inside the hole: black from edge to edge (no cut), then the tunnel opens out of it.
+    film.dark = u < 2.1 || u > 2.6 ? 0 : u < HORIZON_U ? 1 - smooth(1.8, 7.5, pos.distanceTo(BLACK_HOLE)) : 1 - smooth(HORIZON_U + 0.004, HORIZON_U + 0.15, u);
+
+    // The Absolute Order: as the swarm becomes a system, the camera revolves
+    // around it and cranes up to look down on the orbits. Leaving, it unwinds
+    // into the route, which carries on round the same way.
+    if (u > 4.9 && u < 5.6 && film.section >= 5) {
+      const h5 = film.section === 5 ? smooth(0, 1, film.holdProgress) : 1;
+      const k5 = h5 * (1 - smooth(5.0, 5.55, u));
+      if (k5 > 0) {
+        dir.subVectors(pos, ORBITS).applyAxisAngle(UP, 1.15 * k5);
+        pos.copy(ORBITS).add(dir);
+        pos.y += 7 * k5;
+      }
+    }
 
     // Weightless: a slow drift on X and Y that never repeats, wider in
     // turbulence, and gone for a few seconds after the pull breaks (stillness).
@@ -184,7 +204,11 @@ export function Director() {
     const hp = film.holdProgress;
     const creep = 0.8 * hp + 0.2 * hp * hp * (3 - 2 * hp);
     const travelled = Math.min(1, Math.max(0, u - film.section));
-    pos.lerp(look, 0.16 * creep * (1 - smooth(0, 1, travelled)) * drift);
+    const creepK = 0.16 * creep * (1 - smooth(0, 1, travelled)) * drift * (film.section === 2 ? 1 - smooth(2, 2.15, u) : 1);
+    pos.lerp(look, creepK);
+    // ...and a slow boom down as it creeps in, where the shot has no move of its own.
+    const sec = film.section;
+    if (sec === 3 || sec === 4 || sec === 6 || sec === 7) pos.y -= creepK * 0.35 * pos.distanceTo(look);
 
     // Crisis cut-in: snap to a close-up of the moment, then a long release.
     const want = !film.reduced && film.crisisTarget >= 0.5 && film.section >= 3;
@@ -251,8 +275,21 @@ export function Director() {
     }
 
     // Portrait screens: frame the subject in the upper half, words below.
+    // Wide screens, where the title card shares the frame with a centred
+    // subject: tilt up while the card holds, so it sits above the subject.
     const cam = camera as THREE.PerspectiveCamera;
+    const wantSlate = !!chapters[film.section]?.titleTop && film.slateOn ? 1 : 0;
+    film.slate += (wantSlate - film.slate) * Math.min(1, dt * 1.8);
     if (cam.aspect < 0.8) look.y -= pos.distanceTo(look) * 0.22;
+    else {
+      look.y += pos.distanceTo(look) * 0.17 * film.slate * film.slate * (3 - 2 * film.slate);
+      // The Absolute Order: the words hold the left, the system turns on the right third.
+      const p5 = film.presence(5);
+      if (p5 > 0) {
+        rgt.subVectors(look, pos).cross(UP).normalize();
+        look.addScaledVector(rgt, -0.2 * pos.distanceTo(look) * p5 * p5 * (3 - 2 * p5));
+      }
+    }
 
     camera.position.copy(pos);
     camera.lookAt(look);
@@ -272,7 +309,7 @@ export function Director() {
     }
 
     // Where the black hole sits on screen, so the words can fall into it.
-    if (u < CUTS[0].to && film.section <= 2) {
+    if (u < HORIZON_U && film.section <= 2) {
       camera.updateMatrixWorld();
       bhS.copy(BLACK_HOLE).project(camera);
       film.bhX = bhS.x * 0.5 + 0.5;
@@ -283,7 +320,7 @@ export function Director() {
 
     // Masses that bend starlight: the black hole, the crisis, the B2B star.
     const D = camera.position.distanceTo(BLACK_HOLE);
-    const bh = u < CUTS[0].to ? Math.min(1, open) : 0;
+    const bh = u < HORIZON_U ? Math.min(1, open) : 0;
     setLens(0, camera.position, BLACK_HOLE, bh > 0 ? Math.min(0.95, Math.sqrt((2.5 * BH_RADIUS * bh) / Math.max(D, 0.5))) : 0, 0);
     // The final climax: after contact, an event horizon builds dead ahead; at
     // its peak the frame cracks and you cross into the tesseract.

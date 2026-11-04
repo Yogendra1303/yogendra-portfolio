@@ -11,7 +11,7 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { CUTS, film } from "@/lib/film";
+import { film, HORIZON_U } from "@/lib/film";
 import { prng } from "@/lib/math";
 import { sections } from "@/lib/plan";
 import { HANDED } from "@/lib/stage";
@@ -239,7 +239,7 @@ export function ExpectedPath() {
   const g = useRef<THREE.Group>(null);
   // Gone once the camera has crossed the horizon: it all fell in.
   useFrame(() => {
-    if (g.current) g.current.visible = film.u < CUTS[0].to;
+    if (g.current) g.current.visible = film.u < HORIZON_U;
   });
   return (
     <group ref={g}>

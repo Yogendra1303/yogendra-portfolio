@@ -14,7 +14,7 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { CUTS, film } from "@/lib/film";
+import { film, HORIZON_U } from "@/lib/film";
 import { BH_BOUNDS, BH_RADIUS, BLACK_HOLE } from "@/lib/stage";
 
 const vert = /* glsl */ `
@@ -142,7 +142,7 @@ export function BlackHole() {
     if (!mat.current || !mesh.current) return;
     // Tears open with a slight overshoot, then holds. Gone once we are through.
     const open = film.bhOpen;
-    mesh.current.visible = open > 0.001 && film.u < CUTS[0].to;
+    mesh.current.visible = open > 0.001 && film.u < HORIZON_U;
     mat.current.uniforms.uOpen.value = open;
     mat.current.uniforms.uTime.value = film.time;
   });

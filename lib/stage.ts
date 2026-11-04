@@ -22,19 +22,27 @@ export const EARTH_2 = v(32, 9, -466);
 export const TESSERACT = v(10, 1, -545);
 export const DESTINATION = v(0, 0, -1200);
 
-/** Camera route. `key` marks the points that are chapter keyframes. */
-const route: { p: THREE.Vector3; look?: THREE.Vector3; key?: number }[] = [
+/**
+ * Camera route. `key` marks the points that are chapter keyframes.
+ * Shot by shot: ride the line in (00), hold on the crystal (01), track past
+ * its right side and round behind it following the light (01 to 02), face
+ * the hole with the light coming in beside you (02), dolly straight in and
+ * through the horizon into the tunnel (02 to 03), come out on a wide shot
+ * with the globe centred (03).
+ */
+const route: { p: THREE.Vector3; look?: THREE.Vector3; key?: number; horizon?: true; wormhole?: true }[] = [
   { p: v(6.5, 2.2, 34), look: v(0, 0.4, -40), key: 0 },
   { p: v(7, 1.2, 8) },
   { p: v(8, 2.2, -16), look: v(-3, 1.8, -36), key: 1 },
-  { p: v(14, 3, -40) },
-  { p: v(17, 3.5, -62), look: v(0, 6.2, -92), key: 2 },
-  { p: v(9, 7, -80) },
-  { p: v(0.2, 9, -91.6) }, // through the horizon
+  { p: v(7, 3, -33) }, // tracking past the crystal...
+  { p: v(2.2, 3.8, -48) }, // ...round behind it, with the light
+  { p: v(-3, 4.2, -60), look: v(0, 6.2, -92), key: 2 },
+  { p: v(-1.2, 6.8, -78) },
+  { p: v(0.2, 9, -91.6), horizon: true, wormhole: true }, // through the horizon
   { p: v(-4, 7, -112) },
   { p: v(-14, 5, -150) },
-  { p: v(-24, 4, -186) }, // wormhole exit
-  { p: v(-27, 4.5, -214), look: v(-46.2, 0, -233.2), key: 3 },
+  { p: v(-24, 4, -186), wormhole: true }, // wormhole exit
+  { p: v(-15.3, 8, -196.9), look: v(-42, 0, -236), key: 3 },
   { p: v(-36, 12, -255) },
   { p: v(-44, 20, -280), look: v(-62, 13, -305), key: 4 },
   { p: v(-22, 30, -330) },
@@ -66,7 +74,11 @@ export function tForU(u: number) {
 }
 
 /** The wormhole runs along the camera route between these parameters. */
-export const WORMHOLE_T = [6 / M, 9 / M] as const;
+const holes = route.flatMap((r, i) => (r.wormhole ? [i / M] : []));
+export const WORMHOLE_T = [holes[0], holes[1]] as const;
+/** Camera coordinate u at which the camera passes through the black hole's horizon. */
+const tH = route.findIndex((r) => r.horizon) / M;
+export const HORIZON_U = 2 + (tH - keyT[2]) / (keyT[3] - keyT[2]);
 
 /**
  * The career worldline: from the wormhole exit through every chapter.
@@ -113,8 +125,8 @@ function handedLine() {
     v(2.0, 0.6, -34), // around the crystal's right side...
     v(-1.5, 1.4, -43), // ...behind it...
     v(-9, 2.6, -46), // ...to the centre of chapter 01's frame
-    v(-6, 4.5, -64),
-    v(-1.5, 7.2, -80), // in from the left of chapter 02's frame
+    v(-6, 2.8, -62), // beside and below chapter 02's camera...
+    v(-1.5, 7.2, -80), // ...in from the left of its frame
   ];
   // The fall: about one and a half turns along the disk, tightening to the horizon.
   const n = BH_NORMAL;

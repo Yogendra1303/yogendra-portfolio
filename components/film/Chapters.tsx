@@ -84,7 +84,7 @@ function Slate({ ctx, shot, w, first }: { ctx: Ctx; shot: Extract<Shot, { kind: 
   const span = w.b - w.a;
   const ghost = isName ? "#7cffc4" : c.color;
   return (
-    <motion.div aria-hidden style={{ opacity, visibility }} className="absolute inset-0 flex items-center justify-center px-5 text-center">
+    <motion.div aria-hidden style={{ opacity, visibility }} className={`absolute inset-0 flex justify-center px-5 text-center ${c.titleTop ? "items-end pb-[14vh] sm:items-start sm:pb-0 sm:pt-[11vh]" : "items-center"}`}>
       <div className="text-scrim relative flex flex-col items-center">
         <p className="ps-[0.6em] font-mono text-[10px] uppercase tracking-[0.6em] text-white/45">
           {isName ? shot.slug : first ? `Chapter ${c.index}` : c.index}

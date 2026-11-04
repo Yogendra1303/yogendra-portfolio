@@ -435,6 +435,8 @@ export function Effects() {
       else if (film.cutKind === 1) flash = 0.5 * Math.exp(-t * 9);
       else flash = 0.16 * Math.exp(-t * 12);
     }
+    // Inside the black hole: a continuous fade through black, not a cut.
+    if (film.dark > 0) flash = Math.min(flash, -film.dark);
     u.get("uFlash")!.value = flash;
   });
 

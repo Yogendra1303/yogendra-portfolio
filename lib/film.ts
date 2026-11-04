@@ -16,19 +16,23 @@
 import * as THREE from "three";
 import { chapters } from "@/content/story";
 import { sections } from "@/lib/plan";
+import { HORIZON_U } from "@/lib/stage";
 
 export const CHAPTERS = chapters.length;
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
 /**
- * Hard cuts, in camera coordinates. Scrolling across one cuts instead of flying.
- * kind -1 smashes to black (falling through the horizon), +1 is a white shatter.
+ * Cuts, in camera coordinates. Scrolling across a hard one cuts instead of flying.
+ * kind 0 is soft: the camera flies through (falling through the horizon, the
+ * screen goes black inside the hole and the tunnel opens out of it);
+ * +1 is a white shatter (the dimensional shift).
  */
 export const CUTS = [
-  { from: 2.3, to: 2.36, kind: -1 },
+  { from: 2.3, to: 2.36, kind: 0 },
   { from: 4.44, to: 4.56, kind: 1 },
 ] as const;
+export { HORIZON_U };
 
 /** Heavy in-out: a slow, deliberate start, a committed middle, a long settle. */
 function heavy(x: number) {
@@ -36,15 +40,17 @@ function heavy(x: number) {
 }
 /** Heavy, but never dead: a little linear so the first wheel tick already moves. */
 const weighty = (x: number) => 0.72 * heavy(x) + 0.28 * x;
-const outCubic = (x: number) => 1 - Math.pow(1 - x, 3);
 
 /** Scroll through a travel (0..1) to camera progress toward the next chapter (0..1). */
 function travel(i: number, x: number) {
   if (i === 2) {
     // The fall: slow and heavy toward the horizon, accelerating as gravity
-    // takes over. Then the cut to black, and the tunnel spits you out.
-    if (x < 0.46) return (CUTS[0].from - 2) * Math.pow(x / 0.46, 1.7);
-    return CUTS[0].to - 2 + (1 - (CUTS[0].to - 2)) * outCubic((x - 0.46) / 0.54);
+    // takes over, straight through it (no cut: one continuous move, black
+    // inside), then the tunnel carries you at speed and lets you out gently.
+    const a = HORIZON_U - 2;
+    if (x < 0.42) return a * Math.pow(x / 0.42, 1.7);
+    const s = Math.min(1, (x - 0.42) / 0.58);
+    return a + (1 - a) * (1 - Math.pow(1 - s, 1.6));
   }
   const e = weighty(x);
   if (i === 4) {
@@ -114,6 +120,10 @@ class Film {
   bhX = 0.5;
   bhY = 0.5;
   bhR = 0;
+  /** 0..1: the inside of the black hole, black from edge to edge. */
+  dark = 0;
+  /** 0..1, eased: a title card holds the frame (the camera tilts up to give it room). */
+  slate = 0;
   /** Colour of the worldline's present: the dimension we are in. */
   tint = new THREE.Color("#2bff88");
 
@@ -138,6 +148,18 @@ class Film {
       }
     }
     return 0;
+  }
+
+  /** A title card is on screen in the current chapter's hold. */
+  get slateOn() {
+    const plan = sections[this.section];
+    const c = chapters[this.section];
+    if (!plan || !c || this.frac > plan.holdEnd) return false;
+    for (let k = 0; k < plan.shots.length; k++) {
+      const w = plan.shots[k];
+      if (this.frac >= w.a && this.frac < w.b) return c.shots[k].kind === "slate";
+    }
+    return false;
   }
 
   /** How open the black hole is, 0..1 (it opens smoothly as the chapter plays). */
@@ -187,7 +209,7 @@ export function remap(i: number, f: number) {
 /** The cut (if any) lying between two camera coordinates. */
 export function cutBetween(a: number, b: number) {
   const lo = Math.min(a, b), hi = Math.max(a, b);
-  return CUTS.find((c) => lo <= c.from + 1e-4 && hi >= c.to - 1e-4);
+  return CUTS.find((c) => c.kind !== 0 && lo <= c.from + 1e-4 && hi >= c.to - 1e-4);
 }
 
 export const film = new Film();

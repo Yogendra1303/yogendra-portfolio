@@ -194,6 +194,10 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
             for (const d of digits.current) if (d) d.style.transform = d.style.opacity = "";
           }
           if (mode === 2) {
+            // Coming out, the last year rises clear of the globe (drops below it on phones).
+            const lift = lastYear ? clamp01((f - 0.8) / 0.15) : 0;
+            const ly = lift * lift * (3 - 2 * lift) * H * (W / H < 0.8 ? 0.2 : -0.3);
+            year.current.style.transform = ly ? `translate3d(0, ${ly.toFixed(1)}px, 0)` : "";
             // Out of the depth: each year grows toward you and passes; the last one lands.
             const sc = lastYear ? 0.15 + 0.85 * (1 - Math.pow(1 - q, 3)) : 0.15 + 1.75 * q * q;
             num.style.transform = `scale(${sc.toFixed(3)})`;

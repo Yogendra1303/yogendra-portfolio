@@ -3,12 +3,12 @@
  * The transit between chapter 02 and 03: having fallen through the horizon,
  * the camera rides a tunnel of streaking light and comes out somewhere else
  * entirely. Built along the camera's own route so it always surrounds you.
- * It switches on at the cut to black (lib/film.ts CUTS), never before.
+ * It opens out of the black inside the hole, never before.
  */
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { CUTS, film } from "@/lib/film";
+import { film, HORIZON_U } from "@/lib/film";
 import { cameraCurve, WORMHOLE_T } from "@/lib/stage";
 
 const vert = /* glsl */ `
@@ -54,7 +54,8 @@ export function Wormhole() {
     if (!mat.current || !mesh.current) return;
     const u = film.u;
     const exit = Math.min(1, Math.max(0, (u - 2.6) / 0.26));
-    const on = u < CUTS[0].to - 0.002 ? 0 : 0.62 * (1 - exit * exit * (3 - 2 * exit));
+    const open = Math.min(1, Math.max(0, (u - HORIZON_U) / 0.17));
+    const on = 0.62 * open * open * (3 - 2 * open) * (1 - exit * exit * (3 - 2 * exit));
     mat.current.uniforms.uOn.value = on;
     mat.current.uniforms.uTime.value = film.time;
     mesh.current.visible = on > 0.001;
