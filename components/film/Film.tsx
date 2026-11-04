@@ -72,6 +72,8 @@ export default function Film() {
         window.scrollTo(0, el.offsetTop + (el.offsetHeight - window.innerHeight) * f);
         film.snap = true;
       }
+      // Drop the jump from the address, so a reload (or a shared copy) starts at the first frame.
+      history.replaceState(null, "", window.location.pathname + window.location.hash);
     }
     // Every click opens a little wormhole where it lands (Effects.tsx).
     const click = (e: MouseEvent) => {
