@@ -17,10 +17,10 @@ A browser-based cinematic sequence of a nine-year career arc. Scroll to move thr
 
 | # | Chapter | World |
 |---|---|---|
-| 00 | Worldlines | A green thread of light runs straight into the distance: the path you are handed. |
-| 01 | The Baseline (school) | Science: an atom inside a perfect crystal lattice. |
-| 02 | A First Vector (college) | A ray-marched black hole tears open, bends the starlight and pulls the camera into orbit (BBA (Operations), University of Mysore, 2014 – 2017). |
-| → | Transit | A slow fall toward the horizon, a cut to black, then the wormhole: 2014, 2015, 2016 pass inside; 2017 on the way out. |
+| 00 | Worldlines | First person: a green thread of light starts under you and is drawn ahead only as you scroll (still when you stop): the path you are handed. |
+| 01 | The Baseline (school) | Science: an atom inside a perfect crystal lattice; the thread bends around it into the centre of the frame. A short beat. |
+| 02 | A First Vector (college) | A ray-marched black hole tears open, bends the starlight and pulls the camera into orbit; the thread comes in from the left and spirals into it along the disk (BBA (Operations), University of Mysore, 2014 – 2017). |
+| → | Transit | A slow fall with the hole dead centre: 2014 parts around it, then spirals in and is swallowed. A cut to black, then the wormhole: 2015, 2016 come at you out of the depth; 2017 lands on the way out. |
 | 03 | Operational Friction (GoMechanic, startup years) | GoMechanic, 2017 – 2023: first intern, then Day zero in Bengaluru. At the 2022 restructuring the worldline splinters and a wormhole throws out light. Click the globe to open a wormhole in it. |
 | 04 | Critical Mass (General Manager) | General Manager, 2023 – 2024: a 500+ workshop network, repeat usage 31% to 38%, and a second storm of timelines. |
 | → | Dimensional shift | The frame shatters while the camera zooms down an endless lattice of cube frames. |

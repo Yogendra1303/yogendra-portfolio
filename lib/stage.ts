@@ -1,17 +1,18 @@
 /**
  * Where everything sits in the film's 3D space, and the camera's route.
- * The "expected path" is a straight line down -Z. The real career leaves it
- * at the black hole and re-emerges, through a wormhole, as a curving worldline.
+ * The line you are handed (HANDED) runs first person under the camera and
+ * falls into the black hole. The real career re-emerges, through a wormhole,
+ * as a curving worldline.
  */
 import * as THREE from "three";
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 
-export const EXPECTED = { from: v(0, 0, 60), to: v(0, 0, -1400) };
-
 export const SCIENCE = v(-4, 2, -36);
 export const BLACK_HOLE = v(0, 9, -92);
 export const BH_RADIUS = 0.9; // event horizon
+/** The accretion disk's normal (the plane light spirals in along). */
+export const BH_NORMAL = v(0.12, 1, 0.3).normalize();
 export const BH_BOUNDS = 11; // raymarch sphere
 export const EARTH_1 = v(-42, 0, -236);
 export const EARTH_RADIUS = 7.5;
@@ -95,6 +96,56 @@ export const careerCurve = new THREE.CatmullRomCurve3(
   false,
   "centripetal",
 );
+
+/**
+ * The line you are handed (chapters 00 to 02), seen first person: it starts
+ * under the viewer and runs ahead of the camera, bends around the school's
+ * crystal into the centre of that frame, then comes in from the left and
+ * spirals into the black hole along its disk. Nothing leaves the far side.
+ */
+function handedLine() {
+  const pts = [
+    v(6.2, 0.6, 56),
+    v(6.4, 0.6, 30), // under the opening camera
+    v(6.8, -0.2, 8),
+    v(7.8, 0.6, -12), // under chapter 01's camera
+    v(5.4, 0.2, -26),
+    v(2.0, 0.6, -34), // around the crystal's right side...
+    v(-1.5, 1.4, -43), // ...behind it...
+    v(-9, 2.6, -46), // ...to the centre of chapter 01's frame
+    v(-6, 4.5, -64),
+    v(-1.5, 7.2, -80), // in from the left of chapter 02's frame
+  ];
+  // The fall: about one and a half turns along the disk, tightening to the horizon.
+  const n = BH_NORMAL;
+  const e1 = new THREE.Vector3().crossVectors(n, new THREE.Vector3(0, 0, 1)).normalize();
+  const e2 = new THREE.Vector3().crossVectors(n, e1);
+  const rel = pts[pts.length - 1].clone().sub(BLACK_HOLE);
+  const h0 = rel.dot(n);
+  const a0 = Math.atan2(rel.dot(e2), rel.dot(e1));
+  const r0 = Math.hypot(rel.dot(e1), rel.dot(e2));
+  const N = 36;
+  for (let k = 1; k <= N; k++) {
+    const s = k / N;
+    // Clockwise seen from above: the outer arm sweeps the left of chapter 02's
+    // frame and behind the hole, the inner arm comes round the right and falls in.
+    const a = a0 - s * Math.PI * 2 * 1.45;
+    const r = 0.95 + (r0 - 0.95) * Math.pow(1 - s, 1.25);
+    pts.push(
+      BLACK_HOLE.clone()
+        .addScaledVector(e1, Math.cos(a) * r)
+        .addScaledVector(e2, Math.sin(a) * r)
+        .addScaledVector(n, h0 * Math.pow(1 - s, 2.2)),
+    );
+  }
+  const curve = new THREE.CatmullRomCurve3(pts, false, "centripetal");
+  // Arc-length fraction at each named control point.
+  const lengths = curve.getLengths(4000);
+  const total = lengths[lengths.length - 1];
+  const at = (i: number) => lengths[Math.round((i / (pts.length - 1)) * 4000)] / total;
+  return { curve, mark: { viewer: at(1), ahead: at(2), school: at(3), cube: at(4), centre: at(7), fall: at(9) } };
+}
+export const HANDED = handedLine();
 
 /** Real city coordinates (degrees). */
 export const CITIES = {

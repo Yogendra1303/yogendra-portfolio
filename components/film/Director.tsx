@@ -56,6 +56,7 @@ export function Director() {
   const { camera, pointer } = useThree();
   const look = useMemo(() => new THREE.Vector3(), []);
   const ahead = useMemo(() => new THREE.Vector3(), []);
+  const bhS = useMemo(() => new THREE.Vector3(), []);
   const pos = useMemo(() => new THREE.Vector3(), []);
   const lookA = useMemo(() => new THREE.Vector3(), []);
   const dir = useMemo(() => new THREE.Vector3(), []);
@@ -163,6 +164,8 @@ export function Director() {
       pos.copy(BLACK_HOLE).addScaledVector(dir, 1 - 0.28 * k);
       pos.y -= 1.2 * k; // sinking a little below the disk, looking up into it
     }
+    // The fall: the hole swings to dead centre and stays there until the horizon.
+    if (film.section === 2 && u > 2 && u < CUTS[0].to) look.lerp(BLACK_HOLE, smooth(2.0, 2.04, u));
 
     // Weightless: a slow drift on X and Y that never repeats, wider in
     // turbulence, and gone for a few seconds after the pull breaks (stillness).
@@ -266,6 +269,16 @@ export function Director() {
     if (Math.abs(cam.fov - fov) > 0.01) {
       cam.fov += (fov - cam.fov) * Math.min(1, dt * (jolt > 0.2 || b > 0.3 ? 14 : 4));
       cam.updateProjectionMatrix();
+    }
+
+    // Where the black hole sits on screen, so the words can fall into it.
+    if (u < CUTS[0].to && film.section <= 2) {
+      camera.updateMatrixWorld();
+      bhS.copy(BLACK_HOLE).project(camera);
+      film.bhX = bhS.x * 0.5 + 0.5;
+      film.bhY = 0.5 - bhS.y * 0.5;
+      const dBH = camera.position.distanceTo(BLACK_HOLE);
+      film.bhR = bhS.z < 1 ? 3.0 / Math.max(0.5, dBH) / Math.tan((cam.fov * Math.PI) / 360) : 0;
     }
 
     // Masses that bend starlight: the black hole, the crisis, the B2B star.

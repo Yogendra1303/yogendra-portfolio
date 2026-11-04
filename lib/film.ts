@@ -110,6 +110,10 @@ class Film {
   lightOn = 0;
   /** Where the crisis is happening (head of the worldline, or the black hole). */
   focus = new THREE.Vector3();
+  /** The black hole on screen: centre (0..1, y down) and the radius of its glow (fraction of the viewport height). */
+  bhX = 0.5;
+  bhY = 0.5;
+  bhR = 0;
   /** Colour of the worldline's present: the dimension we are in. */
   tint = new THREE.Color("#2bff88");
 

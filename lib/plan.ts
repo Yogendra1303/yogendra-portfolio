@@ -20,6 +20,8 @@ const WEIGHT: Record<Shot["kind"], number> = {
 const SHOT_VH = 30;
 const TRAVEL_VH = 62;
 const FINALE_VH = 380; // end credits, contact, then the index
+/** Tempo per chapter (1 = normal). The school is a short, clean beat. */
+const PACE: Record<number, number> = { 1: 0.58 };
 
 export type Window = { a: number; b: number };
 export type SectionPlan = { heightVh: number; holdEnd: number; shots: Window[] };
@@ -28,8 +30,9 @@ function plan(i: number): SectionPlan {
   const c = chapters[i];
   const last = i === chapters.length - 1;
   const total = c.shots.reduce((s, sh) => s + WEIGHT[sh.kind], 0);
-  const holdVh = last ? FINALE_VH : total * SHOT_VH + 14;
-  const travelVh = last ? 0 : TRAVEL_VH;
+  const pace = PACE[i] ?? 1;
+  const holdVh = last ? FINALE_VH : (total * SHOT_VH + 14) * pace;
+  const travelVh = last ? 0 : TRAVEL_VH * pace;
   const span = holdVh + travelVh;
   const holdEnd = last ? 1 : holdVh / span;
   // Shot windows in section-progress units (0..1 over the scrollable span).

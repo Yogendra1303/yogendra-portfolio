@@ -7,8 +7,10 @@
  * black hole and in a crisis τ falls behind; inside the tesseract it stops.
  *
  * The year card: while the camera travels between dated chapters the year
- * rolls, glitching through each change. Through the wormhole it counts
- * 2014, 2015, 2016 inside the tunnel and lands on 2017 as you come out.
+ * rolls, blinking through each change. At the black hole it sits centred on
+ * the hole and falls in: the digits spiral inward, stretch along the pull,
+ * shrink and vanish at the horizon. Inside the tunnel the years come at you
+ * out of the depth, 2014, 2015, 2016, and 2017 arrives as you come out.
  *
  * Gravity on the words: during a crisis an SVG displacement filter bends the
  * text frame around the same unseen mass that bends the light in WebGL.
@@ -64,6 +66,7 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
   const year = useRef<HTMLDivElement>(null);
   const yearNum = useRef<HTMLParagraphElement>(null);
   const yearNext = useRef<HTMLParagraphElement>(null);
+  const digits = useRef<(HTMLSpanElement | null)[]>([]);
   const wall = useRef<HTMLSpanElement>(null);
   const proper = useRef<HTMLSpanElement>(null);
   const ratio = useRef<HTMLParagraphElement>(null);
@@ -79,6 +82,7 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
     let shownYear = 0;
     let glitchUntil = 0;
     let warping = false;
+    let yearMode = 0; // 0 plain, 1 falling into the hole, 2 inside the tunnel
     const loop = (now: number) => {
       // Letterbox: always a hint of 2.39:1, closing in further with speed and pressure.
       const bar = Math.min(12, 4 + film.speed * 22 + film.presence(0) * 3 + film.crisis * 3);
@@ -91,28 +95,115 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
       const from = chapters[i]?.rollFrom ?? chapters[i]?.year;
       const to = chapters[i + 1]?.year;
       let on = 0;
-      let prog = 0;
+      let yr = 0;
+      let mode = 0;
+      let pull = 0; // 0..1: how far the year has fallen into the hole
+      let q = 0; // 0..1: how close this year has come out of the tunnel's depth
+      let lastYear = false;
       if (from && to && f > 0.005) {
         if (i === 2) {
-          // The fall reads 2014; the tunnel counts the years; 2017 on the way out.
+          // The fall reads 2014 and falls into the hole; the tunnel brings the years.
+          const fallEnd = CUTS[0].from - 2;
           const t0 = CUTS[0].to - 2;
-          prog = clamp01((f - t0) / (0.84 - t0));
           on = Math.min(1, f / 0.04, (1 - f) / 0.08);
+          if (f < t0) {
+            mode = 1;
+            yr = from;
+            pull = Math.pow(clamp01((f - 0.035) / (fallEnd - 0.06)), 1.6);
+          } else {
+            mode = 2;
+            const n = to - from + 1;
+            const yf = Math.min(n - 0.001, clamp01((f - t0) / (0.84 - t0)) * n);
+            const k = Math.floor(yf);
+            yr = from + k;
+            q = yf - k;
+            lastYear = k === n - 1;
+          }
         } else {
-          prog = f * f * (3 - 2 * f);
+          const prog = f * f * (3 - 2 * f);
           on = Math.pow(Math.sin(Math.PI * f), 0.6);
+          yr = Math.round(from + (to - from) * prog);
         }
       }
+      if (film.reduced && mode) mode = mode === 1 ? 0 : 3;
       if (year.current) year.current.style.opacity = String(on * 0.9);
-      if (on > 0 && yearNum.current && yearNext.current) {
-        const yr = Math.round(from! + (to! - from!) * prog);
+      const num = yearNum.current;
+      const next = yearNext.current;
+      if (on > 0 && num && next && year.current) {
         if (yr !== shownYear) {
           shownYear = yr;
           glitchUntil = now + 170;
+          const str = String(yr);
+          digits.current.forEach((d, j) => d && (d.textContent = str[j] ?? ""));
         }
-        yearNum.current.textContent = String(yr);
-        yearNum.current.style.opacity = now < glitchUntil && !film.reduced ? String(0.35 + 0.65 * (1 - (glitchUntil - now) / 170)) : "1";
-        yearNext.current.textContent = `${chapters[i + 1].index} · ${chapters[i + 1].title}`;
+        next.textContent = `${chapters[i + 1].index} · ${chapters[i + 1].title}`;
+        const W = window.innerWidth, H = window.innerHeight;
+        if (mode === 1) {
+          // Centred on the hole, and pulled into it.
+          const cy = num.offsetTop + num.offsetHeight / 2;
+          year.current.style.transform = `translate3d(${((film.bhX - 0.5) * W).toFixed(1)}px, ${(film.bhY * H - cy).toFixed(1)}px, 0)`;
+          num.style.opacity = "1";
+          const R = film.bhR * H * 0.5;
+          const avail = Math.min(film.bhX, 1 - film.bhX) * W - 0.06 * W;
+          const cx = num.offsetLeft + num.offsetWidth / 2;
+          let xmax = 1;
+          let gap = 1e9;
+          let dw = 0;
+          for (const d of digits.current) {
+            if (!d) continue;
+            const x = d.offsetLeft + d.offsetWidth / 2 - cx;
+            xmax = Math.max(xmax, Math.abs(x));
+            gap = Math.min(gap, Math.abs(x) - d.offsetWidth / 2);
+            dw = Math.max(dw, d.offsetWidth / 2);
+          }
+          // The two halves part around the hole so no digit sits across it (the
+          // lensed disk glows well past the ring). On a narrow screen the year
+          // shrinks to fit rather than leave the frame.
+          const clear = R * 1.75;
+          const fit = Math.max(0.55, Math.min(1, (avail - clear) / Math.max(1, xmax + dw - gap)));
+          const push = Math.max(0, Math.min(clear / fit - gap, avail / fit - xmax - dw));
+          num.style.transform = fit < 1 ? `scale(${fit.toFixed(3)})` : "";
+          for (const d of digits.current) {
+            if (!d) continue;
+            const x = d.offsetLeft + d.offsetWidth / 2 - cx;
+            const side = x < 0 ? Math.PI : 0;
+            // The inner digits go first: the pull is stronger closer in.
+            const k = clamp01(pull * 1.35 - 0.35 * (Math.abs(x) / xmax));
+            // Spiralling in: closer, smaller, stretched along the pull, gone at the centre.
+            const r = (Math.abs(x) + push * (1 - k)) * Math.pow(1 - k, 1.3);
+            const a = side + 1.9 * k;
+            const tx = Math.cos(a) * r - x;
+            const ty = Math.sin(a) * r;
+            const sc = 1 - 0.8 * k;
+            d.style.transform = `translate3d(${tx.toFixed(1)}px, ${ty.toFixed(1)}px, 0) rotate(${(a - side).toFixed(3)}rad) scale(${((1 + 1.8 * k) * sc).toFixed(3)}, ${((1 - 0.75 * k) * sc).toFixed(3)})`;
+            d.style.opacity = String(1 - clamp01((k - 0.4) / 0.5));
+          }
+          const pn = clamp01(pull * 1.4);
+          const dy = next.offsetTop + next.offsetHeight / 2 - cy;
+          // The slug starts clear of the ring, then falls in after the digits.
+          const below = Math.max(0, Math.min(R * 1.5 - dy, H * 0.38 - dy));
+          next.style.transform = `translate3d(0, ${(below * (1 - pn) - dy * pn).toFixed(1)}px, 0) scale(${(1 + 0.6 * pn) * (1 - 0.85 * pn)}, ${1 - 0.85 * pn})`;
+          next.style.opacity = String(1 - pn);
+        } else {
+          if (yearMode === 1) {
+            year.current.style.transform = "";
+            for (const d of digits.current) if (d) d.style.transform = d.style.opacity = "";
+          }
+          if (mode === 2) {
+            // Out of the depth: each year grows toward you and passes; the last one lands.
+            const sc = lastYear ? 0.15 + 0.85 * (1 - Math.pow(1 - q, 3)) : 0.15 + 1.75 * q * q;
+            num.style.transform = `scale(${sc.toFixed(3)})`;
+            num.style.opacity = String(Math.min(1, q / 0.25) * (lastYear ? 1 : 1 - clamp01((q - 0.7) / 0.3)));
+            next.style.transform = "";
+            next.style.opacity = lastYear ? String(clamp01((q - 0.3) / 0.4)) : "0";
+          } else {
+            num.style.transform = "";
+            num.style.opacity = now < glitchUntil && !film.reduced ? String(0.35 + 0.65 * (1 - (glitchUntil - now) / 170)) : "1";
+            next.style.transform = "";
+            next.style.opacity = "1";
+          }
+        }
+        yearMode = mode;
       }
 
       const c = Math.round(film.u);
@@ -197,7 +288,11 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
       <div ref={bottom} className="absolute inset-x-0 bottom-0 bg-black transition-[height] duration-300 ease-out" style={{ height: "4vh" }} />
 
       <div ref={year} className="absolute inset-0 flex flex-col items-center justify-center opacity-0" aria-hidden>
-        <p ref={yearNum} className="ps-[0.4em] font-display text-[clamp(3.4rem,13vw,10.5rem)] font-normal leading-none tracking-[0.4em] text-white/80 tabular-nums [text-shadow:0_0_40px_rgba(255,255,255,0.3)]" />
+        <p ref={yearNum} className="font-display text-[clamp(3.4rem,13vw,10.5rem)] font-normal leading-none text-white/80 tabular-nums [text-shadow:0_0_40px_rgba(255,255,255,0.3)]">
+          {[0, 1, 2, 3].map((j) => (
+            <span key={j} ref={(el) => { digits.current[j] = el; }} className="mx-[0.2em] inline-block will-change-transform" />
+          ))}
+        </p>
         <p ref={yearNext} className="mt-6 ps-[0.55em] font-mono text-[11px] uppercase tracking-[0.55em] text-white/80 [text-shadow:0_0_12px_rgba(0,0,0,0.9)]" />
       </div>
 

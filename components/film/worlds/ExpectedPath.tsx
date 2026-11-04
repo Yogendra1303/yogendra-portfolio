@@ -1,108 +1,98 @@
 "use client";
 /**
- * Chapters 00 to 02. The line you are handed: a green silk thread of light
- * running straight into the distance (one-point perspective, no labels).
- * In chapter 02, scrolling scrubs the event: the thread starts to shake,
- * arcs crawl along it, and the black hole above pulls most of its light away.
- * After that it stays behind as a dim ghost: the road not taken.
+ * Chapters 00 to 02. The line you are handed, seen first person: it starts
+ * under the viewer and is drawn ahead of the camera only as you scroll (a
+ * bright head, the trail behind it dimming). Stop scrolling and it holds
+ * still: no flicker, no idle motion. It bends around the school's crystal
+ * into the centre of that frame, then comes in from the left and spirals
+ * into the black hole along its disk, reddening as it falls. After the
+ * horizon it is gone: the plan did not survive the pull.
  */
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { film } from "@/lib/film";
-import { prng, tremorOffset } from "@/lib/math";
-import { BH_RADIUS, BLACK_HOLE, EXPECTED } from "@/lib/stage";
-
-// The stretch of line that shakes, in world Z.
-const Z0 = -30;
-const Z1 = -160;
+import { CUTS, film } from "@/lib/film";
+import { prng } from "@/lib/math";
+import { sections } from "@/lib/plan";
+import { HANDED } from "@/lib/stage";
 
 const ease = (x: number) => x * x * (3 - 2 * x);
 const c01 = (x: number) => Math.min(1, Math.max(0, x));
+const M = HANDED.mark;
 
-/** Shared drivers for this world, scrubbed by chapter 02's scroll. */
-function drivers() {
-  const p = film.progressIn(2);
-  // "tremor" is now the bend: how far the hole has pulled the line toward it.
-  const tremor = ease(c01((p - 0.04) / 0.5));
-  const pull = ease(c01((p - 0.22) / 0.3));
-  return { tremor, pull };
+/** How far the line has been drawn (arc-length fraction), from the story's scroll position. */
+function headAt() {
+  const s = film.s;
+  if (s < 1) return M.ahead + (M.cube - M.ahead) * ease(c01(s));
+  if (s < 2) {
+    const f = s - 1;
+    const h = sections[1]?.holdEnd ?? 0.6;
+    return f < h ? M.cube + (M.centre - M.cube) * ease(f / h) : M.centre + (M.fall - M.centre) * ease((f - h) / (1 - h));
+  }
+  if (s < 3) return M.fall + (1 - M.fall) * ease(c01((film.progressIn(2) - 0.06) / 0.46));
+  return 1;
 }
+/** Phase of the light pulses: pinned to scroll, so light only travels while you scroll. */
+const flow = () => film.s * 8;
 
 const vert = /* glsl */ `
-  uniform float uTime;
-  uniform float uTremor;
-  uniform float uSeed;
-  uniform vec3 uBH;
-  varying float vZ;
-  varying vec3 vNormalV;
-  varying vec3 vViewDir;
-  varying float vDepth;
+  varying float vU; varying vec3 vN; varying vec3 vV; varying float vDepth;
   void main() {
-    // Gravity, not noise: the line sags toward the hole in one smooth arc,
-    // strongest where it passes closest, and the strands spread a little.
-    vec3 toBH = uBH - position;
-    float near = exp(-pow((position.z - uBH.z) / 34.0, 2.0));
-    float bend = uTremor * 6.2 * near;
-    vec3 p = position + normalize(toBH) * min(bend, length(toBH) * 0.7);
-    p.xy += (position.xy) * near * uTremor * 1.6;
-    p.y += sin(position.z * 0.08 + uTime * 0.6 + uSeed) * 0.04 * near * uTremor;
-    vec4 mv = modelViewMatrix * vec4(p, 1.0);
-    vZ = position.z;
+    vU = uv.x;
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
     vDepth = -mv.z;
-    vNormalV = normalize(normalMatrix * normal);
-    vViewDir = normalize(-mv.xyz);
+    vN = normalize(normalMatrix * normal);
+    vV = normalize(-mv.xyz);
     gl_Position = projectionMatrix * mv;
   }
 `;
 const frag = /* glsl */ `
-  uniform float uTime;
-  uniform float uTremor;
-  uniform float uOpacity;
-  uniform float uSeed;
+  uniform float uHead; uniform float uFlow; uniform float uOpacity; uniform float uSeed; uniform float uFall;
   uniform vec3 uColor;
-  varying float vZ;
-  varying vec3 vNormalV;
-  varying vec3 vViewDir;
-  varying float vDepth;
-  float hash(float n) { return fract(sin(n) * 43758.5453); }
+  varying float vU; varying vec3 vN; varying vec3 vV; varying float vDepth;
   void main() {
-    float rim = pow(1.0 - abs(dot(vNormalV, vViewDir)), 1.5);
-    float bands = pow(fract(-vZ * 0.06 - uTime * 0.5 + uSeed), 14.0);
-    float fine = pow(fract(-vZ * 0.31 - uTime * 1.6 + uSeed * 3.0), 26.0) * 0.6;
-    float flick = 1.0 + uTremor * 0.25 * sin(uTime * 1.3 + uSeed * 3.0);
-    float glow = (0.4 + rim * 0.9 + bands * 1.5 + fine) * flick;
-    // Fade into the far distance so the line reads as endless.
-    float far = 1.0 - smoothstep(120.0, 520.0, vDepth);
-    vec3 col = mix(uColor, vec3(0.85, 1.0, 0.92), clamp(bands * 0.6, 0.0, 1.0));
-    float a = clamp(glow * uOpacity * far, 0.0, 1.0);
-    gl_FragColor = vec4(col * glow * uOpacity * far, a);
+    float behind = uHead - vU;
+    if (behind < 0.0) discard;
+    float rim = pow(1.0 - abs(dot(vN, vV)), 1.5);
+    float bands = pow(fract(vU * 60.0 - uFlow + uSeed), 14.0);
+    float head = exp(-behind * 140.0);
+    float trail = 0.3 + 0.7 * exp(-behind * 7.0);
+    float g = (0.35 + rim * 0.8 + bands * 1.2) * trail + head * 3.0;
+    // Never floods the lens where it passes under you; fades into the distance.
+    g *= smoothstep(0.8, 5.0, vDepth) * (1.0 - smoothstep(140.0, 420.0, vDepth));
+    // The fall: light reddens and dims as it reaches the horizon.
+    float fall = smoothstep(uFall, 1.0, vU);
+    vec3 col = mix(uColor, vec3(1.0, 0.62, 0.3), fall * 0.8);
+    col = mix(col, vec3(0.9, 1.0, 0.94), clamp(bands * 0.5 + head * 0.4, 0.0, 1.0));
+    g *= 1.0 - 0.8 * smoothstep(0.93, 1.0, vU);
+    gl_FragColor = vec4(col * g * uOpacity, clamp(g * uOpacity, 0.0, 1.0));
   }
 `;
 
 function buildStrands() {
   const r = prng(101);
+  const curve = HANDED.curve;
   const out: { geo: THREE.TubeGeometry; seed: number; core: boolean }[] = [];
-  const count = 7;
-  const len = EXPECTED.from.z - EXPECTED.to.z;
-  for (let k = 0; k < count; k++) {
-    const core = k === 0;
-    const phi = (k / count) * Math.PI * 2;
-    const radius = core ? 0 : 0.07 + r() * 0.1;
-    const pitch = 7 + r() * 6; // world units per twist
+  out.push({ geo: new THREE.TubeGeometry(curve, 1800, 0.014, 6, false), seed: 0, core: true });
+  // Three fine strands twisting around the core, closing in as they fall.
+  const P = new THREE.Vector3(), T = new THREE.Vector3(), N = new THREE.Vector3(), B = new THREE.Vector3();
+  const up = new THREE.Vector3(0, 1, 0);
+  const S = 2000;
+  const turns = curve.getLength() / 9;
+  for (let k = 0; k < 3; k++) {
     const pts: THREE.Vector3[] = [];
-    const n = 900;
-    for (let i = 0; i <= n; i++) {
-      const z = EXPECTED.from.z - (len * i) / n;
-      const a = phi + ((EXPECTED.from.z - z) / pitch) * Math.PI * 2;
-      pts.push(new THREE.Vector3(Math.cos(a) * radius, Math.sin(a) * radius, z));
+    const radius = 0.07 + r() * 0.06;
+    for (let i = 0; i <= S; i++) {
+      const s = i / S;
+      curve.getPointAt(s, P);
+      curve.getTangentAt(s, T);
+      N.crossVectors(T, up).normalize();
+      B.crossVectors(T, N).normalize();
+      const a = (k / 3) * Math.PI * 2 + s * turns * Math.PI * 2;
+      const rad = radius * (1 - 0.8 * Math.max(0, (s - M.fall) / (1 - M.fall)));
+      pts.push(P.clone().addScaledVector(N, Math.cos(a) * rad).addScaledVector(B, Math.sin(a) * rad));
     }
-    const curve = new THREE.CatmullRomCurve3(pts);
-    out.push({
-      geo: new THREE.TubeGeometry(curve, 2400, core ? 0.012 : 0.0045 + r() * 0.004, 6, false),
-      seed: r() * 10,
-      core,
-    });
+    out.push({ geo: new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 2400, 0.0045 + r() * 0.003, 4, false), seed: r() * 10, core: false });
   }
   return out;
 }
@@ -111,13 +101,13 @@ function Strands() {
   const strands = useMemo(buildStrands, []);
   const mats = useRef<(THREE.ShaderMaterial | null)[]>([]);
   useFrame(() => {
-    const { tremor, pull } = drivers();
-    const remaining = 1 - pull * 0.65;
+    const head = headAt();
     for (const m of mats.current) {
       if (!m) continue;
-      m.uniforms.uTime.value = film.time;
-      m.uniforms.uTremor.value = tremor;
-      m.uniforms.uOpacity.value = (m.userData.core ? 0.85 : 0.5) * remaining;
+      m.uniforms.uHead.value = head;
+      m.uniforms.uFlow.value = flow();
+      // Brighter at the hole, where the camera stands back from it.
+      m.uniforms.uOpacity.value = (m.userData.core ? 0.9 : 0.55) * (1 + 0.6 * film.presence(2));
     }
   });
   return (
@@ -132,9 +122,9 @@ function Strands() {
             vertexShader={vert}
             fragmentShader={frag}
             uniforms={{
-              uTime: { value: 0 },
-              uTremor: { value: 0 },
-              uBH: { value: BLACK_HOLE.clone() },
+              uHead: { value: 0 },
+              uFlow: { value: 0 },
+              uFall: { value: M.fall },
               uOpacity: { value: 1 },
               uSeed: { value: s.seed },
               uColor: { value: new THREE.Color("#2bff88") },
@@ -144,52 +134,6 @@ function Strands() {
             blending={THREE.AdditiveBlending}
           />
         </mesh>
-      ))}
-    </group>
-  );
-}
-
-/** Electric arcs that crawl along the shaking stretch. */
-function Lightning({ bolts = 5, segments = 30 }) {
-  const lines = useMemo(
-    () =>
-      Array.from({ length: bolts }, () => {
-        const g = new THREE.BufferGeometry();
-        g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(segments * 3), 3));
-        const m = new THREE.LineBasicMaterial({ color: "#c8ffe2", transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false });
-        return new THREE.Line(g, m);
-      }),
-    [bolts, segments],
-  );
-  const rand = useMemo(() => prng(404), []);
-  const clock = useRef(0);
-  const tmp = useMemo<[number, number]>(() => [0, 0], []);
-  useFrame((_, dt) => {
-    const { tremor } = drivers();
-    clock.current += dt;
-    if (clock.current < 0.06) return;
-    clock.current = 0;
-    for (const line of lines) {
-      const mat = line.material as THREE.LineBasicMaterial;
-      const on = !film.reduced && rand() < tremor * 0.85;
-      mat.opacity = on ? 0.5 + rand() * 0.5 : 0;
-      if (!on) continue;
-      const s0 = 0.15 + rand() * 0.6;
-      const len = 0.04 + rand() * 0.12;
-      const pos = line.geometry.getAttribute("position") as THREE.BufferAttribute;
-      for (let i = 0; i < segments; i++) {
-        const s = s0 + (i / (segments - 1)) * len;
-        tremorOffset(s, film.time, 0.38 * tremor, tmp);
-        const jag = (i === 0 || i === segments - 1 ? 0.15 : 1) * 0.5 * tremor;
-        pos.setXYZ(i, tmp[1] + (rand() - 0.5) * jag, tmp[0] + (rand() - 0.5) * jag, Z0 + (Z1 - Z0) * s);
-      }
-      pos.needsUpdate = true;
-    }
-  });
-  return (
-    <group>
-      {lines.map((l, i) => (
-        <primitive key={i} object={l} frustumCulled={false} />
       ))}
     </group>
   );
@@ -205,7 +149,7 @@ const pVert = /* glsl */ `
     vec4 mv = modelViewMatrix * vec4(position, 1.0);
     gl_PointSize = aSize * (1.0 + aHeat * 0.8) * (80.0 / -mv.z);
     vHeat = aHeat;
-    vAlpha = aAlpha * (1.0 - smoothstep(60.0, 160.0, -mv.z));
+    vAlpha = aAlpha * smoothstep(1.2, 5.0, -mv.z) * (1.0 - smoothstep(80.0, 200.0, -mv.z));
     gl_Position = projectionMatrix * mv;
   }
 `;
@@ -216,135 +160,89 @@ const pFrag = /* glsl */ `
     float d = length(gl_PointCoord - 0.5);
     float a = pow(smoothstep(0.5, 0.0, d), 2.0) * vAlpha;
     if (a < 0.01) discard;
-    vec3 col = mix(vec3(0.17, 1.0, 0.53), vec3(1.0, 0.92, 0.78), clamp(vHeat, 0.0, 1.0));
+    vec3 col = mix(vec3(0.17, 1.0, 0.53), vec3(1.0, 0.78, 0.5), clamp(vHeat, 0.0, 1.0));
     gl_FragColor = vec4(col * a * (1.0 + vHeat * 1.5), a);
   }
 `;
 
-const FLOW = 0;
-const FALLING = 1;
-const G = 210;
-const SWIRL = 7;
-const DRAG = 0.8;
-const PZ0 = 50; // particles live on this stretch of the line
-const PZ1 = -200;
+const LUT = 2048;
 
-/** Light inside the line. 8 in 10 particles can be captured by the black hole. */
-function Light({ count = 3200 }) {
-  const rand = useMemo(() => prng(2024), []);
+/** Light inside the line. It rides toward the head only while you scroll, and falls in with it. */
+function Light({ count = 1400 }) {
   const st = useMemo(() => {
-    const z = new Float32Array(count);
-    const speed = new Float32Array(count);
-    const ang = new Float32Array(count);
-    const rad = new Float32Array(count);
-    const mode = new Uint8Array(count);
-    const cap = new Uint8Array(count);
-    const vel = new Float32Array(count * 3);
+    const rand = prng(2024);
+    const u = new Float32Array(count);
+    const rate = new Float32Array(count);
+    const off = new Float32Array(count * 3);
+    const size = new Float32Array(count);
     for (let i = 0; i < count; i++) {
-      z[i] = PZ0 + (PZ1 - PZ0) * rand();
-      speed[i] = 5 + rand() * 6;
-      ang[i] = rand() * Math.PI * 2;
-      rad[i] = Math.pow(rand(), 2) * 0.2;
-      cap[i] = i % 10 < 8 ? 1 : 0;
+      u[i] = rand();
+      rate[i] = 0.05 + rand() * 0.06;
+      const k = Math.pow(rand(), 2) * 0.16;
+      off.set([(rand() - 0.5) * k, (rand() - 0.5) * k, (rand() - 0.5) * k], i * 3);
+      size[i] = 0.6 + rand() * 1.4;
     }
-    return { z, speed, ang, rad, mode, cap, vel };
-  }, [count, rand]);
-
-  const geo = useMemo(() => {
+    const lut = HANDED.curve.getSpacedPoints(LUT);
     const g = new THREE.BufferGeometry();
     g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(count * 3), 3));
-    const size = new Float32Array(count);
-    for (let i = 0; i < count; i++) size[i] = 0.6 + rand() * 1.4;
     g.setAttribute("aSize", new THREE.BufferAttribute(size, 1));
     g.setAttribute("aHeat", new THREE.BufferAttribute(new Float32Array(count), 1));
     g.setAttribute("aAlpha", new THREE.BufferAttribute(new Float32Array(count), 1));
-    return g;
-  }, [count, rand]);
+    return { u, rate, off, lut, g };
+  }, [count]);
+  const last = useRef({ s: Number.NaN, head: Number.NaN });
 
-  const tmp = useMemo<[number, number]>(() => [0, 0], []);
-  const n = useMemo(() => new THREE.Vector3(0.12, 1, 0.3).normalize(), []);
-
-  useFrame((_, rawDt) => {
-    // Story time: the whole line slows as the well deepens.
-    const dt = Math.min(rawDt, 1 / 30) * film.dilation;
-    const { tremor, pull } = drivers();
-    const P = (geo.getAttribute("position") as THREE.BufferAttribute).array as Float32Array;
-    const H = (geo.getAttribute("aHeat") as THREE.BufferAttribute).array as Float32Array;
-    const AL = (geo.getAttribute("aAlpha") as THREE.BufferAttribute).array as Float32Array;
-    const { z, speed, ang, rad, mode, cap, vel } = st;
-    const bx = BLACK_HOLE.x, by = BLACK_HOLE.y, bz = BLACK_HOLE.z;
-    // Scrolling back before the event returns all light to the line.
-    if (pull <= 0.001) mode.fill(FLOW);
-
+  useFrame(() => {
+    const head = headAt();
+    const L = last.current;
+    // Nothing moves unless the scroll does.
+    if (film.s === L.s && head === L.head) return;
+    const ds = Number.isNaN(L.s) ? 0 : film.s - L.s;
+    L.s = film.s;
+    L.head = head;
+    const { u, rate, off, lut, g } = st;
+    const lo = Math.max(0, head - 0.4);
+    const span = Math.max(1e-4, head - lo);
+    const P = (g.getAttribute("position") as THREE.BufferAttribute).array as Float32Array;
+    const H = (g.getAttribute("aHeat") as THREE.BufferAttribute).array as Float32Array;
+    const AL = (g.getAttribute("aAlpha") as THREE.BufferAttribute).array as Float32Array;
     for (let i = 0; i < count; i++) {
+      let x = u[i] + ds * rate[i];
+      x = lo + ((((x - lo) % span) + span) % span);
+      u[i] = x;
+      const t = x * LUT;
+      const j = Math.min(LUT - 1, Math.floor(t));
+      const f = t - j;
+      const a = lut[j], b = lut[j + 1];
+      const heat = c01((x - M.fall) / (1 - M.fall));
+      const k = 1 - 0.85 * heat;
       const i3 = i * 3;
-      if (mode[i] === FLOW) {
-        z[i] -= speed[i] * dt;
-        if (z[i] < PZ1) z[i] += PZ0 - PZ1;
-        const s = (z[i] - Z0) / (Z1 - Z0);
-        // Ride the same smooth bend as the strands.
-        const near = Math.exp(-Math.pow((z[i] - bz) / 34, 2));
-        const bend = tremor * 6.2 * near;
-        const d = Math.hypot(bx, by, bz - z[i]) || 1;
-        const k = Math.min(bend, d * 0.7) / d;
-        tmp[0] = by * k;
-        tmp[1] = bx * k;
-        void s;
-        const a = ang[i] + z[i] * 0.9 + film.time * 0.6;
-        P[i3] = tmp[1] + Math.cos(a) * rad[i];
-        P[i3 + 1] = tmp[0] + Math.sin(a) * rad[i];
-        P[i3 + 2] = z[i];
-        H[i] = 0;
-        AL[i] = 0.75;
-        if (pull > 0 && cap[i] && z[i] < bz + 30 && z[i] > bz - 30 && rand() < pull * dt * 3) {
-          mode[i] = FALLING;
-          vel[i3] = (rand() - 0.5) * 2;
-          vel[i3 + 1] = 3 + rand() * 3;
-          vel[i3 + 2] = -speed[i];
-        }
-      } else {
-        const rx = bx - P[i3], ry = by - P[i3 + 1], rz = bz - P[i3 + 2];
-        const d2 = rx * rx + ry * ry + rz * rz;
-        const d = Math.sqrt(d2);
-        const inv = 1 / (d2 * d + 0.05);
-        let ax = G * rx * inv, ay = G * ry * inv, az = G * rz * inv;
-        const sx = (n.y * rz - n.z * ry) / d, sy = (n.z * rx - n.x * rz) / d, sz = (n.x * ry - n.y * rx) / d;
-        const sw = SWIRL / (d + 0.5);
-        ax += sx * sw; ay += sy * sw; az += sz * sw;
-        // Gravitational time dilation, seen from outside: light falling in
-        // slows, dims and freezes at the horizon. sqrt(1 - rs/r), softened.
-        const local = Math.max(0.05, Math.sqrt(Math.max(0, 1 - (BH_RADIUS * 1.5) / d)));
-        const ldt = dt * local;
-        const damp = 1 - DRAG * ldt;
-        vel[i3] = (vel[i3] + ax * ldt) * damp;
-        vel[i3 + 1] = (vel[i3 + 1] + ay * ldt) * damp;
-        vel[i3 + 2] = (vel[i3 + 2] + az * ldt) * damp;
-        P[i3] += vel[i3] * ldt;
-        P[i3 + 1] += vel[i3 + 1] * ldt;
-        P[i3 + 2] += vel[i3 + 2] * ldt;
-        H[i] = Math.min(1, 6 / (d2 + 1)) * local;
-        AL[i] = Math.min(1, d / (BH_RADIUS * 2.5)) * (0.25 + 0.75 * local);
-        if (d < BH_RADIUS * 1.1 || d > 60) {
-          mode[i] = FLOW;
-          z[i] = PZ0 - rand() * 10;
-        }
-      }
+      P[i3] = a.x + (b.x - a.x) * f + off[i3] * k;
+      P[i3 + 1] = a.y + (b.y - a.y) * f + off[i3 + 1] * k;
+      P[i3 + 2] = a.z + (b.z - a.z) * f + off[i3 + 2] * k;
+      H[i] = heat * heat;
+      AL[i] = 0.75 * (1 - c01((x - 0.93) / 0.07)) * (0.45 + 0.55 * Math.exp(-(head - x) * 7));
     }
-    geo.getAttribute("position").needsUpdate = true;
-    geo.getAttribute("aHeat").needsUpdate = true;
-    geo.getAttribute("aAlpha").needsUpdate = true;
+    g.getAttribute("position").needsUpdate = true;
+    g.getAttribute("aHeat").needsUpdate = true;
+    g.getAttribute("aAlpha").needsUpdate = true;
   });
 
   return (
-    <points geometry={geo} frustumCulled={false}>
+    <points geometry={st.g} frustumCulled={false}>
       <shaderMaterial vertexShader={pVert} fragmentShader={pFrag} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }
 
 export function ExpectedPath() {
+  const g = useRef<THREE.Group>(null);
+  // Gone once the camera has crossed the horizon: it all fell in.
+  useFrame(() => {
+    if (g.current) g.current.visible = film.u < CUTS[0].to;
+  });
   return (
-    <group>
+    <group ref={g}>
       <Strands />
       <Light />
     </group>

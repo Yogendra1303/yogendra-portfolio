@@ -37,7 +37,7 @@ const vert = /* glsl */ `
   }
 `;
 const frag = /* glsl */ `
-  uniform float uReveal; uniform float uTime; uniform float uCrisis; uniform float uGain; uniform float uSurge;
+  uniform float uReveal; uniform float uTime; uniform float uCrisis; uniform float uGain; uniform float uSurge; uniform float uFlow;
   uniform float uStopS[${MAX_STOPS}]; uniform vec3 uStopC[${MAX_STOPS}]; uniform int uStops;
   varying float vU; varying vec3 vN; varying vec3 vV; varying float vDepth;
   void main() {
@@ -52,13 +52,16 @@ const frag = /* glsl */ `
       seam += exp(-pow((vU - s) / 0.0016, 2.0));
     }
     float rim = pow(1.0 - abs(dot(vN, vV)), 1.4);
-    float bands = pow(fract(vU * 40.0 - uTime * 0.35), 14.0);
+    // Light travels along the line only while you scroll (uFlow is the scroll position).
+    float bands = pow(fract(vU * 40.0 - uFlow), 14.0);
     float head = exp(-(uReveal - vU) * 260.0) * (3.0 + uCrisis * 1.2);
+    // The present is bright; the path behind you settles back into the dark.
+    float trail = 0.35 + 0.65 * exp(-(uReveal - vU) * 9.0);
     // Fade where the line passes right by the lens, so it never floods the frame.
-    float g = (0.5 + rim + bands * 1.3 + head + seam * 2.4) * smoothstep(0.6, 6.0, vDepth);
+    float g = ((0.5 + rim + bands * 1.3) * trail + head + seam * 2.4) * smoothstep(0.6, 6.0, vDepth);
     vec3 col = mix(c, vec3(1.0, 0.97, 0.92), clamp(seam * 0.55 + head * 0.06, 0.0, 1.0));
     // Filaments: surges of light racing along, like a thread being pulled taut.
-    g = g * uGain + uSurge * pow(fract(vU * 7.0 - uTime * 0.9), 38.0) * 2.4 * smoothstep(0.6, 6.0, vDepth);
+    g = g * uGain + uSurge * pow(fract(vU * 7.0 - uFlow * 0.4), 38.0) * 2.4 * trail * smoothstep(0.6, 6.0, vDepth);
     gl_FragColor = vec4(col * g * 0.8, clamp(g * 0.8, 0.0, 1.0));
   }
 `;
@@ -254,6 +257,7 @@ export function CareerLine() {
       uStops: { value: stops.length },
       uGain: { value: 1 },
       uSurge: { value: 0 },
+      uFlow: { value: 0 },
     };
   }, []);
   // The braid: three thin filaments twisting around the line, sharing its uniforms.
@@ -296,8 +300,9 @@ export function CareerLine() {
   }, []);
   const pm = useRef<THREE.PointsMaterial>(null);
   const v = useMemo(() => new THREE.Vector3(), []);
+  const lastFlow = useRef({ s: Number.NaN, reveal: Number.NaN, cam: new THREE.Vector3(1e9, 0, 0) });
 
-  useFrame(() => {
+  useFrame(({ camera }) => {
     const reveal = careerReveal(film.s);
     const on = reveal > 0;
     if (mesh.current) mesh.current.visible = on;
@@ -306,6 +311,7 @@ export function CareerLine() {
     if (mat.current) {
       mat.current.uniforms.uReveal.value = reveal;
       mat.current.uniforms.uTime.value = film.time;
+      mat.current.uniforms.uFlow.value = film.s * 2.5;
       mat.current.uniforms.uCrisis.value = film.reduced ? 0 : film.crisis;
     }
     for (const m of [bmat.current, gmat.current]) {
@@ -318,15 +324,27 @@ export function CareerLine() {
     }
     if (pm.current) pm.current.opacity = on ? 0.8 : 0;
     if (!on) return;
-    // Light keeps flowing along the traced line, slower when time dilates.
+    // Light flows along the traced line only while you scroll; it holds still when you stop.
+    const L = lastFlow.current;
+    if (film.s === L.s && reveal === L.reveal && L.cam.distanceToSquared(camera.position) < 0.04) return;
+    L.cam.copy(camera.position);
+    const ds = Number.isNaN(L.s) ? 0 : film.s - L.s;
+    L.s = film.s;
+    L.reveal = reveal;
     const P = (parts.g.getAttribute("position") as THREE.BufferAttribute).array as Float32Array;
+    const lo = Math.max(0, reveal - 0.25);
+    const span = Math.max(1e-4, reveal - lo);
     for (let i = 0; i < N; i++) {
-      parts.s[i] += parts.sp[i] * film.dt;
-      if (parts.s[i] > reveal) parts.s[i] = Math.max(0, reveal - 0.25) + (parts.s[i] - reveal) * 0.1;
+      const x = parts.s[i] + parts.sp[i] * ds * 6;
+      parts.s[i] = lo + ((((x - lo) % span) + span) % span);
       careerCurve.getPointAt(Math.min(1, parts.s[i]), v);
       P[i * 3] = v.x + parts.off[i * 3];
       P[i * 3 + 1] = v.y + parts.off[i * 3 + 1];
       P[i * 3 + 2] = v.z + parts.off[i * 3 + 2];
+      // Never right on the lens (where the line starts at the wormhole exit): it would blot the frame.
+      const dx = P[i * 3] - camera.position.x, dy = P[i * 3 + 1] - camera.position.y, dz = P[i * 3 + 2] - camera.position.z;
+      // Density stays even: a short stretch of line carries only a few lights.
+      if (dx * dx + dy * dy + dz * dz < 9 || i > N * (span / 0.25)) P[i * 3 + 1] += 1e4;
     }
     parts.g.getAttribute("position").needsUpdate = true;
   });
