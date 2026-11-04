@@ -18,14 +18,14 @@ A browser-based cinematic sequence of a nine-year career arc. Scroll to move thr
 | # | Chapter | World |
 |---|---|---|
 | 00 | Worldlines | A green thread of light runs straight into the distance: the path you are handed. |
-| 01 | School | Science: an atom inside a perfect crystal lattice. |
-| 02 | Graduation | A ray-marched black hole tears open, bends the starlight and pulls the camera into orbit (BBA (Operations), University of Mysore, 2014 – 2017). |
+| 01 | The Constant (school) | Science: an atom inside a perfect crystal lattice. |
+| 02 | The Pull (graduation) | A ray-marched black hole tears open, bends the starlight and pulls the camera into orbit (BBA (Operations), University of Mysore, 2014 – 2017). |
 | → | Transit | A slow fall toward the horizon, a cut to black, then the wormhole: 2014, 2015, 2016 pass inside; 2017 on the way out. |
-| 03 | Internship | GoMechanic, 2017 – 2023: first intern, then Day zero in Bengaluru. At the 2022 restructuring the worldline splinters and a wormhole throws out light. Click the globe to open a wormhole in it. |
-| 04 | Transformation | General Manager, 2023 – 2024: a 500+ workshop network, repeat usage 31% to 38%, and a second storm of timelines. |
+| 03 | Ignition (internship) | GoMechanic, 2017 – 2023: first intern, then Day zero in Bengaluru. At the 2022 restructuring the worldline splinters and a wormhole throws out light. Click the globe to open a wormhole in it. |
+| 04 | Critical Mass (General Manager) | General Manager, 2023 – 2024: a 500+ workshop network, repeat usage 31% to 38%, and a second storm of timelines. |
 | → | Dimensional shift | The frame shatters while the camera zooms down an endless lattice of cube frames. |
-| 05 | Enterprise | RightChoice: a swarm (B2C) collapses into 15 heavy orbiting bodies (B2B). |
-| 06 | Consulting | Program management consulting and ConsultBae: Gurugram ⇄ Dubai, and out to the USA. |
+| 05 | Gravity Well (enterprise) | RightChoice: a swarm (B2C) collapses into 15 heavy orbiting bodies (B2B). |
+| 06 | Deep Field (consulting) | Program management consulting and ConsultBae: Gurugram ⇄ Dubai, and out to the USA. |
 | 07 | Strange Attractor | A 4D tesseract with every chapter's thread through it. Time stops here. |
 | 08 | Order | Let's talk. Then the climax, an event horizon: the frame bends around a dark centre and cracks open into the tesseract: a corridor of every moment; drag through time and enter any of them. |
 
