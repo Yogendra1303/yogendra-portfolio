@@ -5,7 +5,8 @@
  */
 import { Canvas } from "@react-three/fiber";
 import Lenis from "lenis";
-import { Suspense, useCallback, useEffect, useRef } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { ResumeCard } from "./ResumeCard";
 import * as THREE from "three";
 import { chapters } from "@/content/story";
 import { film, remap } from "@/lib/film";
@@ -77,6 +78,7 @@ export default function Film() {
       film.clickY = 1 - e.clientY / window.innerHeight;
       film.clickAt = film.clock;
       film.clickBig = -1;
+      film.clickDark = false;
     };
     window.addEventListener("pointerdown", click);
     return () => {
@@ -84,6 +86,20 @@ export default function Film() {
       lenis.current?.destroy();
     };
   }, []);
+
+  const [resumeOpen, setResumeOpen] = useState(false);
+  // The name takes you home: back to the first frame, through the whole film at speed.
+  const home = useCallback(() => {
+    film.clickDark = true;
+    player.cancel();
+    if (lenis.current) lenis.current.scrollTo(0, { duration: 2.4 });
+    else window.scrollTo({ top: 0 });
+  }, [player]);
+  const openResume = useCallback(() => {
+    film.clickDark = true;
+    player.cancel();
+    setResumeOpen(true);
+  }, [player]);
 
   const jump = useCallback((id: string) => {
     const el = document.getElementById(`chapter-${id}`);
@@ -148,7 +164,8 @@ export default function Film() {
         </Canvas>
       </div>
       <Chapters onJump={jump} />
-      <Hud player={player} />
+      <Hud player={player} onHome={home} onResume={openResume} />
+      <ResumeCard open={resumeOpen} onClose={() => setResumeOpen(false)} />
       <div className="film-grain" aria-hidden />
     </>
   );

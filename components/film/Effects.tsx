@@ -46,6 +46,7 @@ const fractureFrag = /* glsl */ `
   uniform vec3 uMass; // mass: screen xy, strength
   uniform float uEmit; // 0: a dark horizon; 1: a wormhole that emits light
   uniform vec4 uClick; // a click's wormhole: screen xy, strength, size
+  uniform float uClickDark; // 1: a dark wormhole that swallows light
   ${shardGLSL}
 
   // Gravity: light is pulled toward a mass and wrapped around it, twisting.
@@ -106,7 +107,15 @@ const fractureFrag = /* glsl */ `
         c += vec3(1.0, 0.75, 0.45) * exp(-pow((r - rE) / (rE * 0.08), 2.0)) * 0.12 * uMass.z;
       }
     }
-    if (uClick.z > 0.001) c += emission(vUv, uClick.xy, uClick.z, uClick.w) * 0.8;
+    if (uClick.z > 0.001) {
+      if (uClickDark > 0.5) {
+        vec2 d = (vUv - uClick.xy) * vec2(aspect, 1.0);
+        float r = length(d);
+        float rE = uClick.w * uClick.z + 1e-4;
+        c *= mix(1.0, 0.0, exp(-pow(r / (rE * 0.55), 2.0)));
+        c += vec3(0.75, 0.85, 1.0) * exp(-pow((r - rE * 0.62) / (rE * 0.07), 2.0)) * 0.35 * uClick.z;
+      } else c += emission(vUv, uClick.xy, uClick.z, uClick.w) * 0.8;
+    }
     if (uFracture > 0.001) {
       vec4 s = shardAt((vUv - 0.5) * vec2(aspect, 1.0));
       // Hairline cracks that catch the light only near the peak of the shift.
@@ -131,6 +140,7 @@ class FractureEffect extends Effect {
         ["uMass", new THREE.Uniform(new THREE.Vector3(0.5, 0.5, 0))],
         ["uEmit", new THREE.Uniform(1)],
         ["uClick", new THREE.Uniform(new THREE.Vector4(0.5, 0.5, 0, 0.1))],
+        ["uClickDark", new THREE.Uniform(0)],
         ["uShard", new THREE.Uniform(seeds.map((s) => s.clone()))],
       ]),
     });
@@ -411,7 +421,8 @@ export function Effects() {
         }
         scoreClick(film.clickBig === 1);
       }
-      const big = film.clickBig === 1;
+      const big = film.clickBig === 1 || film.clickDark;
+      fracture.uniforms.get("uClickDark")!.value = film.clickDark ? 1 : 0;
       const env = Math.min(1, age / 0.12) * Math.exp(-age * 2.2);
       click.set(film.clickX, film.clickY, (big ? 1 : 0.5) * env, big ? 0.2 : 0.07);
     } else click.z = 0;

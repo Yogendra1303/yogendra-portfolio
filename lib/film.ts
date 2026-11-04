@@ -97,6 +97,8 @@ class Film {
   clickY = 0.5;
   clickAt = -99;
   clickBig = -1;
+  /** The last click opened a dark wormhole (the name, the résumé) rather than a bright one. */
+  clickDark = false;
   /** 0..1: the final event horizon, after contact, just before the tesseract. */
   horizon = 0;
   /** 0..1: the closing tesseract (the time index after contact) is on screen. */

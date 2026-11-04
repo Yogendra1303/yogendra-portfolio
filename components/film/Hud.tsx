@@ -14,7 +14,7 @@
  * text frame around the same unseen mass that bends the light in WebGL.
  */
 import { useEffect, useRef, useState } from "react";
-import { Pause, Play, Volume2, VolumeX } from "lucide-react";
+import { FileText, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { chapters, owner } from "@/content/story";
 import { CUTS, film } from "@/lib/film";
 import { startScore, stopScore, updateScore } from "@/lib/score";
@@ -63,7 +63,7 @@ function lensMap() {
 
 type Player = { state: PlaybackState; play: () => void; cancel: () => void };
 
-export function Hud({ player }: { player: Player }) {
+export function Hud({ player, onHome, onResume }: { player: Player; onHome: () => void; onResume: () => void }) {
   const top = useRef<HTMLDivElement>(null);
   const bottom = useRef<HTMLDivElement>(null);
   const year = useRef<HTMLDivElement>(null);
@@ -208,8 +208,22 @@ export function Hud({ player }: { player: Player }) {
         <p ref={yearNext} className="mt-6 ps-[0.55em] font-mono text-[11px] uppercase tracking-[0.55em] text-white/80 [text-shadow:0_0_12px_rgba(0,0,0,0.9)]" />
       </div>
 
-      <div className="absolute left-5 top-5 hidden sm:left-8 sm:top-7 sm:block">
-        <p className="font-display text-[10px] uppercase tracking-[0.2em] text-white/85 sm:text-[11px] sm:tracking-[0.35em]">{owner.name}</p>
+      <div className="absolute left-5 top-5 flex flex-col items-start gap-2 sm:left-8 sm:top-7 sm:flex-row sm:items-baseline sm:gap-6">
+        <button
+          type="button"
+          onClick={onHome}
+          aria-label={`${owner.name}: back to the beginning`}
+          className="pointer-events-auto font-display text-[9px] uppercase tracking-[0.15em] text-white/85 transition hover:text-white focus-visible:text-white focus-visible:outline-none sm:text-[11px] sm:tracking-[0.35em]"
+        >
+          {owner.name}
+        </button>
+        <button
+          type="button"
+          onClick={onResume}
+          className="pointer-events-auto inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.35em] text-[var(--signal)]/80 transition hover:text-[var(--signal)] focus-visible:text-[var(--signal)] focus-visible:outline-none sm:text-[10px]"
+        >
+          <FileText className="h-3 w-3" aria-hidden /> Résumé
+        </button>
       </div>
       <div className="absolute right-5 top-5 flex flex-col items-end text-right sm:right-8 sm:top-7">
         <button
@@ -219,7 +233,8 @@ export function Hud({ player }: { player: Player }) {
           className="pointer-events-auto inline-flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.4em] text-white/80 transition hover:text-white focus-visible:text-white focus-visible:outline-none"
         >
           {playing ? <Pause className="h-3 w-3" aria-hidden /> : <Play className="h-3 w-3" aria-hidden />}
-          {playing ? "Pause" : player.state === "complete" ? "Play again" : "Play the film"}
+          <span className="hidden sm:inline">{playing ? "Pause" : player.state === "complete" ? "Play again" : "Play the film"}</span>
+          <span className="sm:hidden">{playing ? "Pause" : "Play"}</span>
         </button>
         <p className="mt-3 font-mono text-[10px] uppercase tracking-[0.3em] text-white/45">
           <span className="text-white/90">{c.index}</span> / {chapters[chapters.length - 1].index}

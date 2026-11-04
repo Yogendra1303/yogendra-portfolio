@@ -24,7 +24,7 @@ A browser-based cinematic sequence of a nine-year career arc. Scroll to move thr
 | 03 | Operational Friction (GoMechanic, startup years) | GoMechanic, 2017 – 2023: first intern, then Day zero in Bengaluru. At the 2022 restructuring the worldline splinters and a wormhole throws out light. Click the globe to open a wormhole in it. |
 | 04 | Critical Mass (General Manager) | General Manager, 2023 – 2024: a 500+ workshop network, repeat usage 31% to 38%, and a second storm of timelines. |
 | → | Dimensional shift | The frame shatters while the camera zooms down an endless lattice of cube frames. |
-| 05 | Gravity Well (enterprise) | RightChoice: a swarm (B2C) collapses into 15 heavy orbiting bodies (B2B). |
+| 05 | The Absolute Order (enterprise) | RightChoice: a swarm (B2C) collapses into 15 heavy orbiting bodies (B2B). |
 | 06 | A Distributed System (consulting) | Program management consulting and ConsultBae: Gurugram ⇄ Dubai. |
 | 07 | The Synthesis | A 4D tesseract with every chapter's thread through it. Time stops here. |
 | 08 | Order | Initiate contact. Then the climax, an event horizon: the frame bends around a dark centre and cracks open into the tesseract: a corridor of every moment; drag through time and enter any of them. |
@@ -55,5 +55,6 @@ QA shortcut: `?chapter=5&f=0.4` opens chapter 5, 40% of the way through its scro
 - `components/film/Chapters.tsx`, `Hud.tsx`: the text (decoding, ghosted title cards, subtitles, credits, the closing index) and the frame (letterbox, Play, clocks, the year counter, gravity on the words)
 - `components/film/useAutoplay.ts`, `lib/playback.ts`: Play the film
 - `lib/score.ts`: the score
+- `components/film/ResumeCard.tsx`, `content/resume.ts`: the digital résumé (top left); the name returns to the first frame
 - `components/film/worlds/Dust.tsx`: volumetric dust and light bleed
 - `scripts/gen-earth.mjs`: rebuilds `content/earth-dots.json` from Natural Earth data

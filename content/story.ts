@@ -17,7 +17,7 @@
  */
 export type Shot =
   /** Title card: a screenplay slug line and a monumental title. */
-  | { kind: "slate"; slug: string; title: string; crisis?: number; shift?: string }
+  | { kind: "slate"; slug: string; title: string; sub?: string; crisis?: number; shift?: string }
   /** A subtitle: one line of narration, bottom of frame. */
   | { kind: "say"; text: string; em?: boolean; crisis?: number; shift?: string }
   /** Opening-credits role card: "Yogendra Singh Kapkoti as …". */
@@ -159,14 +159,14 @@ export const chapters: Chapter[] = [
   {
     id: "rightchoice",
     index: "05",
-    title: "Gravity Well",
+    title: "The Absolute Order",
     when: "2024 – 2025",
     year: 2024,
     coords: "28.46° N  77.03° E",
     side: "left",
     color: "#8fb8ff",
     shots: [
-      { kind: "slate", slug: "Enterprise · RightChoice · June 2024", title: "Gravity Well" },
+      { kind: "slate", slug: "Enterprise · RightChoice · June 2024", title: "The Absolute Order", sub: "The orbit changed everything. What we carried grew heavier." },
       { kind: "say", text: "Then the gravity flipped." },
       { kind: "say", text: "Car owners became enterprise accounts. B2C became B2B." },
       { kind: "say", text: "Fewer bodies. Far more mass. Lose one, and you feel it.", em: true },
@@ -218,7 +218,7 @@ export const chapters: Chapter[] = [
   {
     id: "next",
     index: "08",
-    title: "Order",
+    title: "Contact",
     when: "",
     side: "center",
     color: "#2bff88",

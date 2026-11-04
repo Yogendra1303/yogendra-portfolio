@@ -117,7 +117,10 @@ function Slate({ ctx, shot, w, first }: { ctx: Ctx; shot: Extract<Shot, { kind: 
             </p>
           </>
         ) : (
-          <p className="mt-7 ps-[0.5em] font-mono text-[10px] uppercase tracking-[0.5em] text-white/50">{shot.slug}</p>
+          <>
+            {shot.sub && <p className="mt-6 max-w-[36ch] font-serif text-[clamp(1rem,1.6vw,1.3rem)] italic text-white/75">{shot.sub}</p>}
+            <p className="mt-6 ps-[0.5em] font-mono text-[10px] uppercase tracking-[0.5em] text-white/50">{shot.slug}</p>
+          </>
         )}
       </div>
     </motion.div>
