@@ -24,12 +24,14 @@ function Moment({ k, pos, radius, onEnter, active }: { k: number; pos: MotionVal
   const m = MOMENTS[k];
   const angle = k * 1.15 + 0.5;
   const x = Math.cos(angle) * radius;
-  const y = Math.sin(angle) * radius * 0.32;
-  const transform = useTransform(pos, (v) => `translate3d(${x}px, ${y}px, ${(v - k) * 260}px)`);
-  const frame = useTransform(pos, (v) => `translate3d(0px, 0px, ${(v - k) * 260}px)`);
+  const y = Math.sin(angle) * radius * 0.55;
+  const transform = useTransform(pos, (v) => `translate3d(${x}px, ${y}px, ${(v - k) * 330}px)`);
+  const frame = useTransform(pos, (v) => `translate3d(0px, 0px, ${(v - k) * 330}px)`);
+  // The moment you are on is bright; the future fades into the depth; the
+  // past slips away quickly behind you instead of looming at the lens.
   const opacity = useTransform(pos, (v) => {
     const d = k - v;
-    return d < -0.7 ? Math.max(0, 1 + (d + 0.7) * 2.5) : Math.max(0.12, 1 - d * 0.28);
+    return d < -0.15 ? Math.max(0, 1 + (d + 0.15) * 4) : Math.max(0.07, 1 - d * 0.4);
   });
   // Moments that have passed behind you are gone: no ghost clicks.
   const visibility = useTransform(opacity, (o): string => (o < 0.04 ? "hidden" : "visible"));
@@ -163,7 +165,7 @@ export function TimeGrid({ onJump, live }: { onJump: (id: string) => void; live:
             else return;
             e.preventDefault();
           }}
-          className="relative flex gap-x-5 overflow-x-auto px-1 sm:w-64 sm:flex-col sm:gap-0 sm:border-s sm:border-white/10 sm:ps-5"
+          className="relative flex gap-x-5 overflow-x-auto px-1 sm:w-[21rem] sm:flex-none sm:flex-col sm:gap-0 sm:border-s sm:border-white/10 sm:ps-5"
         >
           {MOMENTS.map((mm, k) => (
             <button
@@ -174,7 +176,7 @@ export function TimeGrid({ onJump, live }: { onJump: (id: string) => void; live:
               className="pointer-events-auto flex shrink-0 items-baseline gap-3 py-1.5 text-start transition focus-visible:outline-none"
             >
               <span className="font-mono text-[10px] tracking-[0.3em]" style={{ color: k === near ? mm.color : "rgba(255,255,255,0.35)" }}>{mm.index}</span>
-              <span className={`font-display text-[11px] uppercase tracking-[0.28em] transition ${k === near ? "text-white" : "text-white/40 hover:text-white/80"}`}>{mm.title}</span>
+              <span className={`whitespace-nowrap font-display text-[11px] uppercase tracking-[0.2em] transition ${k === near ? "text-white" : "text-white/40 hover:text-white/80"}`}>{mm.title}</span>
               <span className="ms-auto hidden whitespace-nowrap font-mono text-[9px] tracking-[0.2em] text-white/30 sm:inline">{mm.when}</span>
             </button>
           ))}
