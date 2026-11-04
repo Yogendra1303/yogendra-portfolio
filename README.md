@@ -40,6 +40,21 @@ The score starts with the visitor's first click (browsers need a gesture) and th
 
 QA shortcut: `?chapter=5&f=0.4` opens chapter 5, 40% of the way through its scroll.
 
+## Cinematic architecture
+
+One continuous shot: a single persistent WebGL canvas (React Three Fiber) behind a scroll-driven text layer. Scrolling is the timeline; nothing fires and forgets.
+
+- **Edit and story state** (`content/story.ts`, `lib/plan.ts`, `lib/film.ts`): the screenplay is data (shots: title cards, subtitles, credits, figures, rolls). The plan turns it into scroll windows; `film` turns scroll into a camera coordinate `u`, a story coordinate `s`, and physics: crisis, gravity, time dilation, fracture, hard cuts, the final event horizon.
+- **Camera** (`Director.tsx`): a critically damped spring with mass along an authored route; slow creep and lens push-in through each hold; weightless drift and about 2° of roll; crisis cut-ins with debris knocks; the breakaway lunge and wide stretch into stillness; hard cuts across the horizon and the fracture.
+- **Worlds** (`components/film/worlds/`): a ray-marched black hole, the wormhole, holographic Earths from Natural Earth data, the partner network, the B2C-to-B2B orbits, the dimensional lattice, the 4D tesseract, the career worldline with its branching side timelines, volumetric dust.
+- **Light** (`lib/lens.ts`, `Backdrop.tsx`, `Effects.tsx`): real point-lens gravitational lensing of the sky; a baked nebula cube map; light shafts at quarter resolution; anamorphic flares; a displacement pass that bends light around crises, clicks and the final horizon; bloom, fringing, grade, 24 fps grain.
+- **Words** (`Chapters.tsx`, `cine.tsx`): monumental title cards that decode out of noise with a ghost of themselves; subtitles with an echo; counting figures; the words bend with gravity in a crisis.
+- **Sound** (`lib/score.ts`): synthesised live with Web Audio. A constant bed (organ-like pad per chapter, 40 Hz floor, shimmer, air) with scroll-driven risers, title braams, debris hits, the wormhole slam and swell.
+- **The end** (`TimeGrid.tsx`): initiate contact, an event horizon, then the tesseract: a corridor of every moment to scroll or drag through and enter.
+- **Frame** (`Hud.tsx`, `ResumeCard.tsx`): name (returns home through a dark wormhole), the digital résumé, Play the film, the two clocks (t and τ), letterbox, year counter.
+
+**Stack:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4, three.js with @react-three/fiber, drei and postprocessing, Motion, Lenis, Web Audio, Lucide. Reduced motion is respected throughout. Deploys as a static site (Vercel).
+
 ## Where things live
 
 - `content/story.ts`: the screenplay, every word on screen as shots (slate, subtitle, credit, figure, word, roll), facts from the resume only
