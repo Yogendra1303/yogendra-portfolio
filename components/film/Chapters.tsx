@@ -376,7 +376,7 @@ function Finale({ ctx }: { ctx: Ctx }) {
           href={`mailto:${owner.email}`}
           className="pointer-events-auto mt-8 font-display text-[clamp(1.5rem,5vw,4.2rem)] uppercase tracking-[0.12em] text-white transition hover:text-[var(--signal)] focus-visible:text-[var(--signal)] focus-visible:outline-none"
         >
-          Let&apos;s talk
+          Initiate contact
         </a>
         <span aria-hidden className="mt-6 block h-px w-[min(70vw,40rem)] bg-[linear-gradient(90deg,transparent,var(--signal),#fff,var(--signal),transparent)] shadow-[0_0_18px_var(--signal)]" />
         <div className="mt-8 flex flex-row flex-wrap items-center justify-center gap-x-8 gap-y-4 sm:gap-10">

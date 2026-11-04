@@ -171,8 +171,11 @@ export function TimeGrid({ onJump, live }: { onJump: (id: string) => void; live:
             <button
               key={mm.id}
               type="button"
-              onClick={() => setSel(k)}
+              onClick={() => onJump(mm.id)}
+              onPointerEnter={() => setSel(k)}
+              onFocus={() => setSel(k)}
               aria-current={k === near ? "true" : undefined}
+              aria-label={`Go to ${mm.index}: ${mm.title}, ${mm.when}`}
               className="pointer-events-auto flex shrink-0 items-baseline gap-3 py-1.5 text-start transition focus-visible:outline-none"
             >
               <span className="font-mono text-[10px] tracking-[0.3em]" style={{ color: k === near ? mm.color : "rgba(255,255,255,0.35)" }}>{mm.index}</span>

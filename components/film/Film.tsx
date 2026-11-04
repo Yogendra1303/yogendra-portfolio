@@ -31,17 +31,16 @@ import { Science } from "./worlds/Science";
 import { Tesseract } from "./worlds/Tesseract";
 import { Wormhole } from "./worlds/Wormhole";
 
-const { gurugram, bengaluru, dubai, usa } = CITIES;
+const { gurugram, bengaluru, dubai } = CITIES;
 
 /** World time (see film.remap) at which shot k of chapter i starts. */
 function cue(i: number, match: (s: (typeof chapters)[number]["shots"][number]) => boolean, offset = 0) {
   const k = Math.max(0, chapters[i].shots.findIndex(match));
   return remap(i, sections[i].shots[k].a) + offset;
 }
-// Arcs draw when the story reaches them: Bengaluru on "Day zero", Dubai and the USA on their close-ups.
+// Arcs draw when the story reaches them: Bengaluru on "Day zero", Dubai on its close-up.
 const BLR = cue(3, (s) => s.kind === "slate" && s.title === "Day zero");
 const DXB = cue(6, (s) => s.kind === "word" && s.text === "Dubai");
-const US = cue(6, (s) => s.kind === "word" && s.text === "USA");
 
 export default function Film() {
   const lenis = useRef<Lenis | null>(null);
@@ -140,8 +139,7 @@ export default function Film() {
               color="#ff8a5c"
               arcs={[
                 { from: gurugram, to: dubai, start: DXB, end: DXB + 0.04, color: "#ffb35c" },
-                { from: dubai, to: gurugram, start: DXB + 0.04, end: DXB + 0.08, color: "#ffb35c" },
-                { from: gurugram, to: usa, start: US, end: US + 0.05, color: "#ff8a5c" },
+                { from: dubai, to: gurugram, start: DXB + 0.04, end: DXB + 0.08, color: "#ffb35c" }
               ]}
             />
             <Tesseract />
