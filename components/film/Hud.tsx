@@ -7,7 +7,7 @@
  * black hole and in a crisis τ falls behind; inside the tesseract it stops.
  *
  * The year card: while the camera travels between dated chapters the year
- * rolls, blinking through each change. At the black hole it sits centred on
+ * names the next chapter's year, blinking in. At the black hole it sits centred on
  * the hole and falls in: the digits spiral inward, stretch along the pull,
  * shrink and vanish at the horizon. Inside the tunnel the years come at you
  * out of the depth, 2014, 2015, 2016, and 2017 arrives as you come out.
@@ -85,7 +85,7 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
     let yearMode = 0; // 0 plain, 1 falling into the hole, 2 inside the tunnel
     const loop = (now: number) => {
       // Letterbox: always a hint of 2.39:1, closing in further with speed and pressure.
-      const bar = Math.min(12, 4 + film.speed * 22 + film.presence(0) * 3 + film.crisis * 3);
+      const bar = Math.min(7, 4 + film.speed * 12 + film.presence(0) * 2 + film.crisis * 2);
       if (top.current) top.current.style.height = `${bar}vh`;
       if (bottom.current) bottom.current.style.height = `${bar}vh`;
 
@@ -120,9 +120,9 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
             lastYear = k === n - 1;
           }
         } else {
-          const prog = f * f * (3 - 2 * f);
+          // Between chapters the card names where you are going: the next chapter's year only.
           on = Math.pow(Math.sin(Math.PI * f), 0.6);
-          yr = Math.round(from + (to - from) * prog);
+          yr = to;
         }
       }
       if (film.reduced && mode) mode = mode === 1 ? 0 : 3;
@@ -188,7 +188,7 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
           next.style.transform = `translate3d(0, ${(below * (1 - pn) - dy * pn).toFixed(1)}px, 0) scale(${(1 + 0.6 * pn) * (1 - 0.85 * pn)}, ${1 - 0.85 * pn})`;
           next.style.opacity = String(1 - pn);
         } else {
-          if (yearMode === 1) {
+          if (yearMode !== mode) {
             num.style.textShadow = "";
             year.current.style.transform = "";
             for (const d of digits.current) if (d) d.style.transform = d.style.opacity = "";
@@ -196,7 +196,7 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
           if (mode === 2) {
             // Coming out, the last year rises clear of the globe (drops below it on phones).
             const lift = lastYear ? clamp01((f - 0.8) / 0.15) : 0;
-            const ly = lift * lift * (3 - 2 * lift) * H * (W / H < 0.8 ? 0.2 : -0.3);
+            const ly = lift * lift * (3 - 2 * lift) * H * (W / H < 0.8 ? 0.2 : -0.26);
             year.current.style.transform = ly ? `translate3d(0, ${ly.toFixed(1)}px, 0)` : "";
             // Out of the depth: each year grows toward you and passes; the last one lands.
             const sc = lastYear ? 0.15 + 0.85 * (1 - Math.pow(1 - q, 3)) : 0.15 + 1.75 * q * q;
