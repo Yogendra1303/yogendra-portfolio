@@ -362,7 +362,7 @@ export function updateScore() {
   // Underneath: the 40 Hz floor, sinking with gravity, swelling with a held crisis.
   crisisHeld = crisis > 0.5 ? crisisHeld + dtA : Math.max(0, crisisHeld - dtA * 3);
   const held = smooth(0, 9, crisisHeld);
-  set(sub.gain.gain, 0.05 + 0.3 * gravity + 0.28 * held + 0.06 * s, 0.6);
+  set(sub.gain.gain, 0.05 + 0.3 * gravity + 0.28 * held + 0.06 * s + 0.35 * film.horizon, 0.6);
   set(sub.a.frequency, 40 - 13 * gravity, 0.8);
   set(sub.b.frequency, 80 - 26 * gravity, 0.8);
   // The master filter opens as the story moves forward, and with speed.
@@ -377,6 +377,8 @@ export function updateScore() {
   let rise = 0;
   if (travelling && i !== 2) rise = smooth(0.02, 0.8, f) * (1 - smooth(0.8, 0.88, f));
   if (i === 2 && u < CUTS[0].from) rise = smooth(2.0, CUTS[0].from, u) * 0.8; // the fall whines
+  // The final horizon: a riser into a beat of silence, then the crack into the tesseract.
+  if (film.section === chapters.length - 1) rise = smooth(0.74, 0.845, film.frac) * (1 - smooth(0.845, 0.855, film.frac));
   set(riser.gain.gain, 0.05 * rise, 0.12);
   set(riser.band.frequency, 1500 + 6500 * rise, 0.15);
   set(riser.oscGain.gain, 0.012 * rise, 0.12);

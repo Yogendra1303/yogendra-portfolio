@@ -68,6 +68,7 @@ export function Director() {
   const hitDir = useMemo(() => new THREE.Vector3(), []);
   const rnd = useMemo(() => prng(2022), []);
   const sinceBreak = useRef(99);
+  const lastRaw8 = useRef(0);
   const fwd = useMemo(() => new THREE.Vector3(), []);
 
   useFrame((_, rawDt) => {
@@ -260,8 +261,17 @@ export function Director() {
     const D = camera.position.distanceTo(BLACK_HOLE);
     const bh = u < CUTS[0].to ? Math.min(1, open) : 0;
     setLens(0, camera.position, BLACK_HOLE, bh > 0 ? Math.min(0.95, Math.sqrt((2.5 * BH_RADIUS * bh) / Math.max(D, 0.5))) : 0, 0);
-    // Slot 1: the crisis mass, or the event horizon of the enterprise pivot (dead ahead).
-    const horizon = film.reduced || u > 5.5 ? 0 : film.fracture;
+    // The final climax: after contact, an event horizon builds dead ahead; at
+    // its peak the frame cracks and you cross into the tesseract.
+    const raw8 = film.rawIn(8);
+    const horizon = film.reduced ? 0 : smooth(0.72, 0.83, raw8) * (1 - smooth(0.86, 0.93, raw8));
+    if (!film.reduced && film.horizon > 0.5 && raw8 >= 0.86 && lastRaw8.current < 0.86 && film.sinceCut > 0.45) {
+      film.sinceCut = 0;
+      film.cutKind = 1;
+    }
+    lastRaw8.current = raw8;
+    film.horizon = horizon;
+    // Slot 1: the crisis mass, or the final event horizon.
     if (film.section >= 3 && film.crisis > 0.02) setLens(1, camera.position, film.focus, 0.13 * film.crisis, 0.32);
     else if (horizon > 0.01) {
       camera.getWorldDirection(fwd);

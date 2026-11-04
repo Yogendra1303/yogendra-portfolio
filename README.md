@@ -23,11 +23,11 @@ A browser-based cinematic sequence of a nine-year career arc. Scroll to move thr
 | → | Transit | A slow fall toward the horizon, a cut to black, then the wormhole: 2014, 2015, 2016 pass inside; 2017 on the way out. |
 | 03 | Turbulence | GoMechanic, 2017 – 2023. The worldline splinters into side timelines at the 2022 restructuring. |
 | 04 | Gravity | General Manager, 2023 – 2024: a 500+ workshop network, and a second storm of timelines. |
-| → | Event horizon (the climax) | Crossing into the enterprise era: the frame bends around a dark horizon, then shatters while the camera zooms down an endless lattice. |
+| → | Dimensional shift | The frame shatters while the camera zooms down an endless lattice of cube frames. |
 | 05 | Mass | RightChoice: a swarm (B2C) collapses into 15 heavy orbiting bodies (B2B). |
 | 06 | Signal | Consulting and ConsultBae: Gurugram ⇄ Dubai, and out to the USA. |
 | 07 | Attractor | A 4D tesseract with every chapter's thread through it. Time stops here. |
-| 08 | Order | Let's talk. Then the tesseract: a corridor of every moment; drag through time and enter any of them. |
+| 08 | Order | Let's talk. Then the climax, an event horizon: the frame bends around a dark centre and cracks open into the tesseract: a corridor of every moment; drag through time and enter any of them. |
 
 ### The physics of the story
 
