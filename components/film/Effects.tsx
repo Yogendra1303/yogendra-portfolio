@@ -279,7 +279,7 @@ const filmFrag = /* glsl */ `
     // Hard cuts: a white shatter, an exposure pop, or a smash to black.
     c = uFlash >= 0.0 ? c + vec3(1.0, 0.97, 0.92) * uFlash : c * (1.0 + uFlash);
     // Exposure flicker, frame-locked like a projector.
-    c *= 1.0 + (gh(uFrame) - 0.5) * 0.03 * uFlicker;
+    c *= 1.0 + (gh(uFrame) - 0.5) * 0.012 * uFlicker;
     // Vignette: an anamorphic oval, untouched by the shatter.
     vec2 vq = (vUv - 0.5) * vec2(aspect * 0.78, 1.0);
     c *= mix(1.0, smoothstep(0.95, 0.28, length(vq)), 0.85);

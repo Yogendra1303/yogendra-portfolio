@@ -72,12 +72,17 @@ export function Director() {
   const sinceBreak = useRef(99);
   const lastRaw8 = useRef(0);
   const fwd = useMemo(() => new THREE.Vector3(), []);
+  // The operator's hands: the lens glides toward where the shot wants it.
+  const camS = useMemo(() => new THREE.Vector3(), []);
+  const lookS = useMemo(() => new THREE.Vector3(), []);
+  const started = useRef(false);
 
   useFrame((_, rawDt) => {
     const dt = Math.min(rawDt, 1 / 20);
     film.clock += dt;
     film.sinceCut += dt;
     readScroll();
+    const jump = film.snap || !started.current;
 
     // Story coordinate: the worldline keeps growing through holds.
     const sTarget = film.section + film.frac;
@@ -287,8 +292,18 @@ export function Director() {
       }
     }
 
-    camera.position.copy(pos);
-    camera.lookAt(look);
+    // Every move eases in and out: position and aim glide (no snaps), faster
+    // for position than for aim, as a real operator pans after the dolly.
+    if (jump || film.reduced) {
+      camS.copy(pos);
+      lookS.copy(look);
+      started.current = true;
+    } else {
+      camS.lerp(pos, 1 - Math.exp(-dt * 9));
+      lookS.lerp(look, 1 - Math.exp(-dt * 5.5));
+    }
+    camera.position.copy(camS);
+    camera.lookAt(lookS);
     // A slight Dutch tilt under pressure.
     // Roll: about 2 degrees of weightless drift, plus a kick on every hit.
     const roll = (Math.sin(cl * 0.09 + 0.4) * 0.7 + Math.sin(cl * 0.037 + 2.2) * 0.3) * 0.035 * still;

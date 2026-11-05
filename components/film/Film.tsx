@@ -57,7 +57,7 @@ export default function Film() {
     if (!film.reduced) {
       // Light, quick smoothing: the camera supplies the weight (a spring in the
       // Director), so the page itself should answer the wheel at once.
-      lenis.current = new Lenis({ lerp: 0.11, smoothWheel: true, wheelMultiplier: 1.2, touchMultiplier: 1.5, autoRaf: true });
+      lenis.current = new Lenis({ lerp: 0.085, smoothWheel: true, wheelMultiplier: 1.2, touchMultiplier: 1.5, autoRaf: true });
     }
     // The link always opens on the first frame: never resume mid-film.
     if ("scrollRestoration" in history) history.scrollRestoration = "manual";
