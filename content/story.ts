@@ -168,7 +168,7 @@ export const chapters: Chapter[] = [
     side: "left",
     color: "#8fb8ff",
     shots: [
-      { kind: "slate", slug: "Enterprise · RightChoice · June 2024", title: "The Absolute Order", sub: "From countless small orbits to a few massive ones." },
+      { kind: "slate", slug: "Enterprise · RightChoice · June 2024", title: "The Absolute Order", sub: "The orbit changed everything. What we carried grew heavier." },
       { kind: "say", text: "Then the gravity flipped." },
       { kind: "say", text: "Car owners became enterprise accounts. B2C became B2B." },
       { kind: "say", text: "Fewer bodies. Far more mass. Lose one, and you feel it.", em: true },
