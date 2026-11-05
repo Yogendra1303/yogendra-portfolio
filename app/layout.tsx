@@ -9,10 +9,10 @@ const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono-face" }
 
 export const metadata: Metadata = {
   title: "Yogendra Singh Kapkoti · Worldlines",
-  description: "Nine years, no straight lines: a career in operations, strategy and go-to-market, told as a film.",
+  description: "I build operations from zero, then scale them. Nine years across India and the UAE, told as a film.",
 };
 
-export const viewport: Viewport = { themeColor: "#000000" };
+export const viewport: Viewport = { themeColor: "#000000", viewportFit: "cover" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

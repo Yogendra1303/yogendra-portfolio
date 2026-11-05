@@ -324,7 +324,9 @@ function ScrollCue({ p }: { p: MotionValue<number> }) {
   const opacity = useMap(p, [0, 0.05], [1, 0]);
   return (
     <motion.p aria-hidden style={{ opacity }} className="absolute inset-x-0 bottom-[13vh] flex items-center justify-center gap-3 font-mono text-[10px] uppercase tracking-[0.4em] text-white/50">
-      Click for sound · scroll to begin <ArrowDown className="h-3.5 w-3.5 animate-bounce" aria-hidden />
+      <span className="hidden sm:inline">Click for sound · scroll to start · or press Play</span>
+      <span className="sm:hidden">Tap for sound · swipe to start</span>
+      <ArrowDown className="h-3.5 w-3.5 animate-bounce" aria-hidden />
     </motion.p>
   );
 }
