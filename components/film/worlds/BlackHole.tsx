@@ -13,6 +13,7 @@
  */
 import { useMemo, useRef } from "react";
 import { createPortal, useFrame } from "@react-three/fiber";
+import { OFF } from "@/lib/debug";
 import * as THREE from "three";
 import { film, HORIZON_U } from "@/lib/film";
 import { BH_BOUNDS, BH_RADIUS, BLACK_HOLE } from "@/lib/stage";
@@ -136,6 +137,7 @@ const compFrag = /* glsl */ `
 `;
 
 export function BlackHole() {
+  if (OFF.has("hole")) return null;
   const mat = useRef<THREE.ShaderMaterial>(null);
   const mesh = useRef<THREE.Mesh>(null);
   const uniforms = useMemo(

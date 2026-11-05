@@ -10,6 +10,7 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { lite } from "@/lib/lite";
+import { OFF } from "@/lib/debug";
 import * as THREE from "three";
 import { film } from "@/lib/film";
 import { prng } from "@/lib/math";
@@ -49,6 +50,7 @@ const frag = /* glsl */ `
 `;
 
 export function Loom() {
+  if (OFF.has("loom")) return null;
   const geo = useMemo(() => {
     const r = prng(7777);
     const pos: number[] = [];

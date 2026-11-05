@@ -16,6 +16,7 @@ import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { lite } from "@/lib/lite";
 import { PX, withPx } from "@/lib/px";
+import { OFF } from "@/lib/debug";
 import * as THREE from "three";
 import { film } from "@/lib/film";
 import { prng } from "@/lib/math";
@@ -65,6 +66,7 @@ const frag = /* glsl */ `
 `;
 
 export function Dust() {
+  if (OFF.has("dust")) return null;
   const geo = useMemo(() => {
     const r = prng(808);
     const pos = new Float32Array(COUNT * 3);

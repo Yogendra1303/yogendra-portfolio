@@ -7,6 +7,7 @@
  */
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+import { OFF } from "@/lib/debug";
 import * as THREE from "three";
 import { film, HORIZON_U } from "@/lib/film";
 import { cameraCurve, WORMHOLE_T } from "@/lib/stage";
@@ -42,6 +43,7 @@ const frag = /* glsl */ `
 `;
 
 export function Wormhole() {
+  if (OFF.has("wormhole")) return null;
   const mat = useRef<THREE.ShaderMaterial>(null);
   const mesh = useRef<THREE.Mesh>(null);
   const geo = useMemo(() => {

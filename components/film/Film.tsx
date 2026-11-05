@@ -39,6 +39,10 @@ const { gurugram, bengaluru, dubai } = CITIES;
 
 /** Applies a pending resolution drop only while the frame is (nearly) black. */
 function QualityGate({ pending, apply }: { pending: React.MutableRefObject<number | null>; apply: (d: number) => void }) {
+  // Inside the black hole the frame is black: draw nothing (free frames).
+  useFrame(({ scene }) => {
+    scene.visible = !(film.dark > 0.97);
+  });
   useFrame(() => {
     const p = pending.current;
     if (p === null) return;

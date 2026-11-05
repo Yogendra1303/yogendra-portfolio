@@ -14,6 +14,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { lite } from "@/lib/lite";
 import { PX, withPx } from "@/lib/px";
+import { OFF } from "@/lib/debug";
 import * as THREE from "three";
 import { prng } from "@/lib/math";
 import { film } from "@/lib/film";
@@ -336,8 +337,8 @@ export function Backdrop() {
   });
   return (
     <group ref={g}>
-      <Nebula />
-      <Stars />
+      {!OFF.has("nebula") && <Nebula />}
+      {!OFF.has("stars") && <Stars />}
       <Galaxy seed={11} position={[-46, 20, -110]} rotation={[0.9, 0.2, 0.3]} radius={11} branches={4} inside="#ffd9a8" outside="#5a6bff" />
       <Galaxy seed={23} position={[58, -24, -140]} rotation={[1.25, -0.4, -0.2]} radius={14} branches={3} inside="#e8fff0" outside="#2bd38a" count={16000} speed={0.012} />
       <Galaxy seed={37} position={[22, 34, -160]} rotation={[0.4, 0.8, 0.9]} radius={8} branches={5} inside="#ffffff" outside="#b05cff" count={9000} speed={0.03} />
