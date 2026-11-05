@@ -6,6 +6,7 @@
 import { Canvas } from "@react-three/fiber";
 import Lenis from "lenis";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { PerformanceMonitor } from "@react-three/drei";
 import { ResumeCard } from "./ResumeCard";
 import * as THREE from "three";
 import { chapters } from "@/content/story";
@@ -94,6 +95,10 @@ export default function Film() {
   }, []);
 
   const [resumeOpen, setResumeOpen] = useState(false);
+  // Adaptive quality: render resolution steps down when frames drop and back
+  // up when they are steady again. Phones start a step lower.
+  const [dprMax] = useState(() => (typeof window !== "undefined" && (window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768) ? 1.15 : 1.75));
+  const [dpr, setDpr] = useState(dprMax);
   // The name takes you home: back to the first frame, through the whole film at speed.
   const home = useCallback(() => {
     film.clickDark = true;
@@ -124,11 +129,13 @@ export default function Film() {
     <>
       <div className="fixed inset-0 z-0 bg-black" aria-hidden>
         <Canvas
-          dpr={typeof window !== "undefined" && (window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768) ? [1, 1.15] : [1, 1.75]}
+          dpr={dpr}
           camera={{ position: [6.5, 2.2, 34], fov: 48, near: 0.05, far: 4000 }}
           gl={{ antialias: false, powerPreference: "high-performance", toneMapping: THREE.ACESFilmicToneMapping }}
         >
           <color attach="background" args={["#000000"]} />
+          {/* Steps down only (each change resizes the post-processing buffers, a hitch of its own). */}
+          <PerformanceMonitor bounds={() => [48, 60]} flipflops={2} onDecline={() => setDpr((d) => Math.max(0.9, +(d - 0.3).toFixed(2)))} />
           <Suspense fallback={null}>
             <Director />
             <Backdrop />

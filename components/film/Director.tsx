@@ -258,8 +258,9 @@ export function Director() {
     const jolt = violent * Math.exp(-film.impact * 3.2) * Math.min(1, film.crisis * 2);
     const trem = violent * (film.crisis * 0.05 + jolt * 0.3);
     const c = film.clock;
-    const sx = Math.sin(c * 23.1) * 0.6 + Math.sin(c * 51.7) * 0.4;
-    const sy = Math.sin(c * 19.3 + 1.7) * 0.6 + Math.sin(c * 43.9) * 0.4;
+    // Low-frequency sway, never a buzz: a heavy body being pushed, not a vibrating one.
+    const sx = Math.sin(c * 2.3) * 0.6 + Math.sin(c * 3.7 + 1.1) * 0.4;
+    const sy = Math.sin(c * 1.9 + 1.7) * 0.6 + Math.sin(c * 3.1) * 0.4;
     const tremScale = film.close > 0.2 ? 0.45 : 1; // a close-up shakes less in world units
     pos.x += sx * trem * tremScale;
     pos.y += sy * trem * tremScale;
@@ -307,7 +308,8 @@ export function Director() {
     // A slight Dutch tilt under pressure.
     // Roll: about 2 degrees of weightless drift, plus a kick on every hit.
     const roll = (Math.sin(cl * 0.09 + 0.4) * 0.7 + Math.sin(cl * 0.037 + 2.2) * 0.3) * 0.035 * still;
-    if (!film.reduced) camera.rotateZ(roll + film.crisis * 0.04 + Math.sin(c * 17.0) * jolt * 0.03 + film.close * 0.035 + knock * 0.05 * hitDir.x);
+    // Roll stays within about 2 degrees.
+    if (!film.reduced) camera.rotateZ(Math.max(-0.035, Math.min(0.035, roll + film.crisis * 0.015 + Math.sin(c * 2.0) * jolt * 0.01 + film.close * 0.01 + knock * 0.02 * hitDir.x)));
 
     // Lens: speed widens it, crisis compresses it (crushing weight), the jolt
     // slams it, a close-up goes long.

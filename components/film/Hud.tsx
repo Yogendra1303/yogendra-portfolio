@@ -70,6 +70,7 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
   const wall = useRef<HTMLSpanElement>(null);
   const proper = useRef<HTMLSpanElement>(null);
   const ratio = useRef<HTMLParagraphElement>(null);
+  const progress = useRef<HTMLSpanElement>(null);
   const warpImg = useRef<SVGFEImageElement>(null);
   const warp = useRef<SVGFEDisplacementMapElement>(null);
   const [current, setCurrent] = useState(0);
@@ -86,8 +87,9 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
     const loop = (now: number) => {
       // Letterbox: always a hint of 2.39:1, closing in further with speed and pressure.
       const bar = Math.min(7, 4 + film.speed * 12 + film.presence(0) * 2 + film.crisis * 2);
-      if (top.current) top.current.style.height = `${bar}vh`;
-      if (bottom.current) bottom.current.style.height = `${bar}vh`;
+      const sy = window.innerWidth < 640 ? "scaleY(1)" : `scaleY(${(bar / 7).toFixed(3)})`;
+      if (top.current) top.current.style.transform = sy;
+      if (bottom.current) bottom.current.style.transform = sy;
 
       // The year card.
       const i = Math.floor(film.u);
@@ -219,6 +221,8 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
         last = c;
         setCurrent(c);
       }
+      // How far through the film you are: a hairline under the counter.
+      if (progress.current) progress.current.style.transform = `scaleX(${Math.min(1, Math.max(0, film.u / (chapters.length - 1))).toFixed(4)})`;
       // Two clocks: frames at 24 per second.
       if (wall.current) wall.current.textContent = timecode(film.clock);
       if (proper.current) proper.current.textContent = timecode(film.time);
@@ -292,8 +296,8 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
           <feDisplacementMap ref={warp} in="SourceGraphic" in2="map" scale="0" xChannelSelector="R" yChannelSelector="G" />
         </filter>
       </svg>
-      <div ref={top} className="absolute inset-x-0 top-0 bg-black transition-[height] duration-300 ease-out" style={{ height: "4vh" }} />
-      <div ref={bottom} className="absolute inset-x-0 bottom-0 bg-black transition-[height] duration-300 ease-out" style={{ height: "4vh" }} />
+      <div ref={top} className="bar absolute inset-x-0 top-0 origin-top bg-black" />
+      <div ref={bottom} className="bar absolute inset-x-0 bottom-0 origin-bottom bg-black" />
 
       <div ref={year} className="absolute inset-0 flex flex-col items-center justify-center opacity-0" aria-hidden>
         <p ref={yearNum} className="font-display text-[clamp(3.4rem,13vw,10.5rem)] font-normal leading-none text-white/80 tabular-nums [text-shadow:0_0_40px_rgba(255,255,255,0.3)]">
@@ -304,29 +308,29 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
         <p ref={yearNext} className="mt-6 ps-[0.55em] font-mono text-[11px] uppercase tracking-[0.55em] text-white/80 [text-shadow:0_0_12px_rgba(0,0,0,0.9)]" />
       </div>
 
-      <div className="absolute left-5 top-5 flex flex-col items-start gap-2 sm:left-8 sm:top-7 sm:flex-row sm:items-baseline sm:gap-6">
+      <div className="hud-t hud-l absolute flex flex-col items-start sm:flex-row sm:items-center sm:gap-6">
         <button
           type="button"
           onClick={onHome}
           aria-label={`${owner.name}: back to the beginning`}
-          className="pointer-events-auto font-display text-[9px] uppercase tracking-[0.15em] text-white/85 transition hover:text-white focus-visible:text-white focus-visible:outline-none sm:text-[11px] sm:tracking-[0.35em]"
+          className="pointer-events-auto py-1 font-display text-[10px] uppercase tracking-[0.2em] text-white/85 transition hover:text-white focus-visible:text-white focus-visible:outline-none sm:text-[11px] sm:tracking-[0.35em]"
         >
           {owner.name}
         </button>
         <button
           type="button"
           onClick={onResume}
-          className="pointer-events-auto inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.35em] text-[var(--signal)]/80 transition hover:text-[var(--signal)] focus-visible:text-[var(--signal)] focus-visible:outline-none sm:text-[10px]"
+          className="pointer-events-auto -my-2 inline-flex min-h-11 items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.3em] text-[var(--signal)]/85 transition hover:text-[var(--signal)] focus-visible:text-[var(--signal)] focus-visible:outline-none"
         >
           <FileText className="h-3 w-3" aria-hidden /> Résumé
         </button>
       </div>
-      <div className="absolute right-5 top-5 flex flex-col items-end text-right sm:right-8 sm:top-7">
+      <div className="hud-t hud-r absolute flex flex-col items-end text-right">
         <button
           type="button"
           onClick={onPlay}
           aria-pressed={playing}
-          className="pointer-events-auto inline-flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.4em] text-white/80 transition hover:text-white focus-visible:text-white focus-visible:outline-none"
+          className="pointer-events-auto -my-3 inline-flex min-h-11 items-center gap-2.5 ps-3 font-mono text-[10px] uppercase tracking-[0.3em] text-white/80 transition hover:text-white focus-visible:text-white focus-visible:outline-none sm:tracking-[0.4em]"
         >
           {playing ? <Pause className="h-3 w-3" aria-hidden /> : <Play className="h-3 w-3" aria-hidden />}
           <span className="hidden sm:inline">{playing ? "Pause" : player.state === "complete" ? "Play again" : "Play the film"}</span>
@@ -336,6 +340,9 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
           <span className="text-white/90">{c.index}</span> / {chapters[chapters.length - 1].index}
           {current > 0 && <span className="hidden sm:inline"> · {c.title}</span>}
         </p>
+        <span aria-hidden className="mt-2 block h-px w-16 bg-white/15">
+          <span ref={progress} className="block h-px w-full origin-left bg-white/70" style={{ transform: "scaleX(0)" }} />
+        </span>
         <div aria-hidden className="mt-3 hidden font-mono text-[9px] uppercase tabular-nums tracking-[0.28em] text-white/35 sm:block">
           <p>
             <span className="normal-case">t</span> <span ref={wall} className="text-white/55">00:00:00:00</span>
@@ -347,7 +354,7 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
         </div>
       </div>
 
-      <div className="absolute bottom-5 left-5 sm:bottom-7 sm:left-8">
+      <div className="hud-b hud-l absolute">
         <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/45">
           {c.when && <span className="text-white/70">{c.when}</span>}
           {c.when && c.coords && <span className="hidden sm:inline"> · </span>}
@@ -359,7 +366,7 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
         type="button"
         onClick={toggle}
         aria-pressed={sound}
-        className="pointer-events-auto absolute bottom-5 right-5 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.3em] text-white/45 transition hover:text-white focus-visible:text-white focus-visible:outline-none sm:bottom-7 sm:right-8"
+        className="hud-b hud-r pointer-events-auto absolute -mb-3.5 inline-flex min-h-11 items-center gap-2 ps-3 font-mono text-[10px] uppercase tracking-[0.3em] text-white/55 transition hover:text-white focus-visible:text-white focus-visible:outline-none"
       >
         {sound ? <Volume2 className="h-3.5 w-3.5" aria-hidden /> : <VolumeX className="h-3.5 w-3.5" aria-hidden />}
         Sound {sound ? "on" : "off"}

@@ -98,6 +98,29 @@ body {
   filter: url(#gravity-warp);
 }
 
+/*
+ * The frame's safe zone. Letterbox bars are a fixed height and only scale
+ * (no layout per frame); every HUD item sits inside the picture, just below
+ * the tallest bar and clear of the notch. Phones: thin, steady bars.
+ */
+:root {
+  --bar-max: 7vh;
+  --hud-x: 32px;
+}
+.bar { height: var(--bar-max); will-change: transform; }
+.hud-t { top: calc(var(--bar-max) + 10px + env(safe-area-inset-top)); }
+.hud-b { bottom: calc(var(--bar-max) + 10px + env(safe-area-inset-bottom)); }
+.hud-l { left: calc(var(--hud-x) + env(safe-area-inset-left)); }
+.hud-r { right: calc(var(--hud-x) + env(safe-area-inset-right)); }
+@media (max-width: 639px) {
+  :root { --bar-max: 3vh; --hud-x: 16px; }
+}
+/* Phones: drop the costly layers (the WebGL pass already has grain). */
+@media (max-width: 639px), (pointer: coarse) {
+  .film-grain { display: none; }
+  .warp .frame { filter: none; }
+}
+
 /* The time axis in the closing tesseract: a hairline with a glowing cursor. */
 .time-axis {
   appearance: none;

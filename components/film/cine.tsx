@@ -21,21 +21,23 @@ function hash(n: number) {
 }
 
 /**
- * Text that resolves from scrambled glyphs as progress goes 0..1 across [a, b].
- * `center` settles letters from the middle outward; `seed` changes the noise
- * (so a ghost copy scrambles differently from the original).
+ * Text that resolves from scrambled glyphs once the scroll reaches `a`. The
+ * resolve is timed (about 0.4 s), not scrubbed, so it never freezes half-done
+ * when the scroll stops; scrolling back does not re-scramble it. `center`
+ * settles letters from the middle outward; `seed` changes the noise (so a
+ * ghost copy scrambles differently). Phones show the word straight away.
  */
-export function Decode({ p, a, b, text, reduced, center, seed = 0 }: { p: MotionValue<number>; a: number; b: number; text: string; reduced?: boolean; center?: boolean; seed?: number }) {
+const DECODE_MS = 420;
+export function Decode({ p, a, text, reduced, center, seed = 0 }: { p: MotionValue<number>; a: number; b?: number; text: string; reduced?: boolean; center?: boolean; seed?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const draw = (v: number) => {
+  const st = useRef({ started: false, raf: 0 });
+  const paint = (r: number, tick: number) => {
     const el = ref.current;
     if (!el) return;
-    const r = reduced ? 1 : clamp01((v - a) / Math.max(1e-4, b - a));
     if (r >= 1) {
       if (el.textContent !== text) el.textContent = text;
       return;
     }
-    const tick = Math.floor(v * 900);
     const mid = (text.length - 1) / 2;
     let out = "";
     for (let i = 0; i < text.length; i++) {
@@ -47,8 +49,39 @@ export function Decode({ p, a, b, text, reduced, center, seed = 0 }: { p: Motion
     }
     el.textContent = out;
   };
+  const draw = (v: number) => {
+    const S = st.current;
+    const instant = reduced || (typeof window !== "undefined" && window.innerWidth < 640);
+    if (v < a) {
+      // Before the cue: ready to resolve again (it is faded out here anyway).
+      if (S.started) {
+        S.started = false;
+        cancelAnimationFrame(S.raf);
+      }
+      paint(instant ? 1 : 0, 0);
+      return;
+    }
+    if (S.started) return;
+    S.started = true;
+    if (instant) return paint(1, 0);
+    const t0 = performance.now();
+    const step = (now: number) => {
+      const r = (now - t0) / DECODE_MS;
+      paint(r, Math.floor(now / 45));
+      if (r < 1 && S.started) S.raf = requestAnimationFrame(step);
+    };
+    S.raf = requestAnimationFrame(step);
+  };
   useMotionValueEvent(p, "change", draw);
-  useEffect(() => draw(p.get()));
+  useEffect(() => {
+    draw(p.get());
+    const S = st.current;
+    return () => {
+      cancelAnimationFrame(S.raf);
+      S.started = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   return <span ref={ref} aria-hidden>{text}</span>;
 }
 
@@ -144,7 +177,7 @@ export function Ghosted({ p, a, b, text, reduced, color, center }: { p: MotionVa
     <span className="relative inline-block whitespace-nowrap">
       <Decode p={p} a={a} b={b} text={text} reduced={reduced} center={center} />
       {!reduced && (
-        <motion.span aria-hidden className="pointer-events-none absolute inset-0 mix-blend-screen" style={{ opacity, x, y, color }}>
+        <motion.span aria-hidden className="pointer-events-none absolute inset-0 sm:mix-blend-screen" style={{ opacity, x, y, color }}>
           <Decode p={p} a={a + span * 0.12} b={b + span * 0.3} text={text} center={center} seed={7} />
         </motion.span>
       )}
@@ -159,7 +192,7 @@ export function Echo({ p, a, b, children, color, reduced }: { p: MotionValue<num
   const x = useMapLen(p, [a, a + w * 0.4], [-0.35, 0], "em");
   if (reduced) return null;
   return (
-    <motion.span aria-hidden className="pointer-events-none absolute inset-0 mix-blend-screen" style={{ opacity, x, color }}>
+    <motion.span aria-hidden className="pointer-events-none absolute inset-0 sm:mix-blend-screen" style={{ opacity, x, color }}>
       {children}
     </motion.span>
   );
