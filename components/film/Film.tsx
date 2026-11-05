@@ -35,6 +35,9 @@ import { Wormhole } from "./worlds/Wormhole";
 
 const { gurugram, bengaluru, dubai } = CITIES;
 
+/** The address's jump (?chapter=), read once: the address is cleaned after the jump. */
+const initialSearch = typeof window !== "undefined" ? window.location.search : "";
+
 /** World time (see film.remap) at which shot k of chapter i starts. */
 function cue(i: number, match: (s: (typeof chapters)[number]["shots"][number]) => boolean, offset = 0) {
   const k = Math.max(0, chapters[i].shots.findIndex(match));
@@ -59,7 +62,7 @@ export default function Film() {
     // The link always opens on the first frame: never resume mid-film.
     if ("scrollRestoration" in history) history.scrollRestoration = "manual";
     // QA helper: ?chapter=5 starts on chapter 5.
-    const q = new URLSearchParams(window.location.search);
+    const q = new URLSearchParams(initialSearch);
     const start = q.get("chapter");
     if (!start) {
       window.scrollTo(0, 0);
@@ -121,7 +124,7 @@ export default function Film() {
     <>
       <div className="fixed inset-0 z-0 bg-black" aria-hidden>
         <Canvas
-          dpr={typeof window !== "undefined" && (window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768) ? [1, 1.3] : [1, 1.75]}
+          dpr={typeof window !== "undefined" && (window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768) ? [1, 1.15] : [1, 1.75]}
           camera={{ position: [6.5, 2.2, 34], fov: 48, near: 0.05, far: 4000 }}
           gl={{ antialias: false, powerPreference: "high-performance", toneMapping: THREE.ACESFilmicToneMapping }}
         >

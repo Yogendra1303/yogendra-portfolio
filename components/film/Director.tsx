@@ -28,7 +28,7 @@ import { careerReveal, colorAt } from "@/lib/timeline";
 import { prng } from "@/lib/math";
 
 /** Camera spring stiffness (rad/s): mass you can feel, lag you can't. */
-const W = 4.6;
+const W = 5.6;
 const UP = new THREE.Vector3(0, 1, 0);
 const smooth = (a: number, b: number, x: number) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -210,17 +210,13 @@ export function Director() {
     const sec = film.section;
     if (sec === 3 || sec === 4 || sec === 6 || sec === 7) pos.y -= creepK * 0.35 * pos.distanceTo(look);
 
-    // Crisis cut-in: snap to a close-up of the moment, then a long release.
+    // Crisis: a fast, fluid push in on the moment (no cut), then a long release.
     const want = !film.reduced && film.crisisTarget >= 0.5 && film.section >= 3;
     if (want && !closeOn.current) {
       closeOn.current = true;
-      film.close = 1;
       closeT.current = 0;
-      if (film.sinceCut > 0.45) {
-        film.sinceCut = 0;
-        film.cutKind = 2; // an exposure pop: the cut itself is the violence
-      }
     }
+    if (closeOn.current) film.close += (1 - film.close) * Math.min(1, dt * 2.4);
     if (!want && closeOn.current && !film.reduced) {
       // The crisis lets go: the pull breaks.
       film.breakaway = 1;
@@ -255,7 +251,7 @@ export function Director() {
     // Sudden violence: the jolt at a crisis onset, then a heavy tremor.
     const violent = film.reduced || film.section <= 2 ? 0 : 1; // the black hole pulls; it does not shake
     const jolt = violent * Math.exp(-film.impact * 3.2) * Math.min(1, film.crisis * 2);
-    const trem = violent * (film.crisis * 0.09 + jolt * 0.55);
+    const trem = violent * (film.crisis * 0.05 + jolt * 0.3);
     const c = film.clock;
     const sx = Math.sin(c * 23.1) * 0.6 + Math.sin(c * 51.7) * 0.4;
     const sy = Math.sin(c * 19.3 + 1.7) * 0.6 + Math.sin(c * 43.9) * 0.4;
@@ -265,7 +261,7 @@ export function Director() {
     look.x += sx * trem * 0.5 * tremScale;
     look.y += sy * trem * 0.5 * tremScale;
     // A debris hit: a sharp knock that dies fast.
-    const knock = film.reduced ? 0 : Math.exp(-film.hit * 9) * 0.55 * tremScale;
+    const knock = film.reduced ? 0 : Math.exp(-film.hit * 9) * 0.3 * tremScale;
     pos.addScaledVector(hitDir, knock);
     // The pull breaks: a lunge forward that peaks fast and settles.
     const b = film.breakaway;

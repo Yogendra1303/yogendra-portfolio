@@ -112,7 +112,6 @@ export const chapters: Chapter[] = [
     title: "Operational Friction",
     when: "2017 – 2023",
     year: 2017,
-    rollFrom: 2022,
     coords: "12.97° N  77.59° E",
     titleTop: true,
     side: "left",
@@ -131,9 +130,9 @@ export const chapters: Chapter[] = [
       { kind: "figure", value: 5, prefix: "$", suffix: "M+", caption: "GMV portfolio, with the P&L end to end.", note: "50k+ retail · 10k+ fleet" },
       { kind: "figure", value: 50, suffix: "+", caption: "People in the operations team I scaled.", note: "With Product: conversion up 30%+" },
       { kind: "roll", heading: "In partnership with", names: ["Ola", "Zoomcar", "BluSmart", "Tata AIG"] },
-      { kind: "say", text: "2022. The ground gave way. The company had to restructure.", crisis: 1, shift: "#ff8a2b" },
+      { kind: "say", text: "2023. The ground gave way. The company had to restructure.", crisis: 1, shift: "#ff8a2b" },
       { kind: "say", text: "A restructuring shows you what you really built.", crisis: 0.85 },
-      { kind: "figure", value: 70, suffix: "%", caption: "Of my team stayed through the 2022 restructuring.", note: "Team retention · GoMechanic · 2022", crisis: 0.2, shift: "#2bff88" },
+      { kind: "figure", value: 70, suffix: "%", caption: "Of my team stayed through the 2023 restructuring.", note: "Team retention · GoMechanic · 2023", crisis: 0.2, shift: "#2bff88" },
     ],
   },
   {
@@ -169,7 +168,7 @@ export const chapters: Chapter[] = [
     side: "left",
     color: "#8fb8ff",
     shots: [
-      { kind: "slate", slug: "Enterprise · RightChoice · June 2024", title: "The Absolute Order", sub: "The orbit changed everything. What we carried grew heavier." },
+      { kind: "slate", slug: "Enterprise · RightChoice · June 2024", title: "The Absolute Order", sub: "From countless small orbits to a few massive ones." },
       { kind: "say", text: "Then the gravity flipped." },
       { kind: "say", text: "Car owners became enterprise accounts. B2C became B2B." },
       { kind: "say", text: "Fewer bodies. Far more mass. Lose one, and you feel it.", em: true },
@@ -193,7 +192,7 @@ export const chapters: Chapter[] = [
     shots: [
       { kind: "slate", slug: "Consulting · Gurugram and Dubai · May 2025", title: "No Fixed Orbit" },
       { kind: "say", text: "For years, I kept the clients." },
-      { kind: "say", text: "Now I hunt them." },
+      { kind: "say", text: "Now I find them. And win them." },
       { kind: "credit", role: "Program Management Consultant", org: "Business Consulting", when: "May 2025 – now" },
       { kind: "word", text: "Dubai", caption: "A month in-house, building retail operations from zero for a mattress factory's first store.", note: "UAE · and operational setup for Al Jouhar Group and Ease Living" },
       { kind: "say", text: "CarEasy's on-demand vertical, from zero: partners, SOPs, launch." },

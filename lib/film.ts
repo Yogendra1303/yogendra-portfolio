@@ -23,14 +23,14 @@ export const CHAPTERS = chapters.length;
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
 /**
- * Cuts, in camera coordinates. Scrolling across a hard one cuts instead of flying.
- * kind 0 is soft: the camera flies through (falling through the horizon, the
- * screen goes black inside the hole and the tunnel opens out of it);
- * +1 is a white shatter (the dimensional shift).
+ * Cuts, in camera coordinates. Scrolling across a hard one (kind != 0) cuts
+ * instead of flying. Both are soft now, one continuous shot: the camera flies
+ * through the horizon (black inside the hole, the tunnel opens out of it) and
+ * through the dimensional shift (the frame fractures as it passes).
  */
 export const CUTS = [
   { from: 2.3, to: 2.36, kind: 0 },
-  { from: 4.44, to: 4.56, kind: 1 },
+  { from: 4.44, to: 4.56, kind: 0 },
 ] as const;
 export { HORIZON_U };
 
@@ -39,7 +39,7 @@ function heavy(x: number) {
   return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
 }
 /** Heavy, but never dead: a little linear so the first wheel tick already moves. */
-const weighty = (x: number) => 0.72 * heavy(x) + 0.28 * x;
+const weighty = (x: number) => 0.45 * heavy(x) + 0.55 * x;
 
 /** Scroll through a travel (0..1) to camera progress toward the next chapter (0..1). */
 function travel(i: number, x: number) {
@@ -52,13 +52,7 @@ function travel(i: number, x: number) {
     const s = Math.min(1, (x - 0.42) / 0.58);
     return a + (1 - a) * (1 - Math.pow(1 - s, 1.6));
   }
-  const e = weighty(x);
-  if (i === 4) {
-    // The shatter happens at the midpoint of the dimensional shift.
-    const a = CUTS[1].from - 4, b = CUTS[1].to - 4;
-    return e < 0.5 ? (e / 0.5) * a : b + ((e - 0.5) / 0.5) * (1 - b);
-  }
-  return e;
+  return weighty(x);
 }
 
 class Film {
