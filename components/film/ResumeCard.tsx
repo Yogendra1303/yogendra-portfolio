@@ -12,7 +12,11 @@ import { owner } from "@/content/story";
 import { resume } from "@/content/resume";
 
 const H = ({ children }: { children: React.ReactNode }) => (
-  <h3 className="mt-9 font-mono text-[10px] uppercase tracking-[0.45em] text-[var(--signal)]/80">{children}</h3>
+  <h3 className="font-mono text-[10px] uppercase tracking-[0.45em] text-[var(--signal)] [text-shadow:0_0_10px_color-mix(in_srgb,var(--signal)_45%,transparent)]">{children}</h3>
+);
+/** One section of the résumé in a neon-bordered box, in the film's signal colour. */
+const Box = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <section className={`neon-box mt-4 rounded-[10px] p-[14px] sm:p-5 ${className}`}>{children}</section>
 );
 
 export function ResumeCard({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -53,7 +57,7 @@ export function ResumeCard({ open, onClose }: { open: boolean; onClose: () => vo
               >
                 <X className="h-5 w-5" aria-hidden />
               </button>
-              <h2 className="font-display text-[clamp(1.4rem,3.4vw,2.2rem)] uppercase tracking-[0.18em] text-white">{resume.name}</h2>
+              <h2 className="font-display text-[clamp(1.4rem,3.4vw,2.2rem)] uppercase tracking-[0.18em] text-[var(--signal)] [text-shadow:0_0_18px_color-mix(in_srgb,var(--signal)_55%,transparent)]">{resume.name}</h2>
               <p className="mt-2 font-serif text-lg italic text-white/80">{resume.headline}</p>
               <p className="mt-3 flex flex-wrap gap-x-6 gap-y-2 font-mono text-[10px] uppercase tracking-[0.25em] text-white/55">
                 <span>{resume.location}</span>
@@ -61,22 +65,26 @@ export function ResumeCard({ open, onClose }: { open: boolean; onClose: () => vo
                 <a href={owner.linkedin} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 hover:text-white"><Link2 className="h-3 w-3" aria-hidden />LinkedIn</a>
                 <a href={owner.github} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 hover:text-white"><GitBranch className="h-3 w-3" aria-hidden />GitHub</a>
               </p>
-              <p className="mt-7 text-[15px] leading-relaxed text-white/80">{resume.summary}</p>
+              <Box className="mt-7">
+                <p className="text-[15px] leading-relaxed text-white/80">{resume.summary}</p>
+              </Box>
 
-              <H>Key achievements</H>
-              <ul className="mt-4 grid gap-4 sm:grid-cols-2">
-                {resume.achievements.map((a) => (
-                  <li key={a.title}>
-                    <p className="font-display text-[11px] uppercase tracking-[0.2em] text-white">{a.title}</p>
-                    <p className="mt-1 text-[13px] leading-relaxed text-white/65">{a.text}</p>
-                  </li>
-                ))}
-              </ul>
+              <Box>
+                <H>Key achievements</H>
+                <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {resume.achievements.map((a) => (
+                    <li key={a.title} className="neon-cell rounded-[8px] p-3">
+                      <p className="font-display text-[11px] uppercase tracking-[0.2em] text-white">{a.title}</p>
+                      <p className="mt-1 text-[13px] leading-relaxed text-white/65">{a.text}</p>
+                    </li>
+                  ))}
+                </ul>
+              </Box>
 
-              <H>Experience</H>
-              <ol className="mt-4 space-y-7">
+              <h3 className="mt-7 font-mono text-[10px] uppercase tracking-[0.45em] text-[var(--signal)] [text-shadow:0_0_10px_color-mix(in_srgb,var(--signal)_45%,transparent)]">Experience</h3>
+              <ol>
                 {resume.experience.map((x) => (
-                  <li key={x.role + x.when}>
+                  <li key={x.role + x.when} className="neon-box mt-4 rounded-[10px] p-[14px] sm:p-5">
                     <p className="font-display text-[12px] uppercase tracking-[0.18em] text-white">{x.role}</p>
                     <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.22em] text-white/50">
                       {x.org} · {x.when} · {x.where}
@@ -90,23 +98,31 @@ export function ResumeCard({ open, onClose }: { open: boolean; onClose: () => vo
                 ))}
               </ol>
 
-              <H>Education</H>
-              <p className="mt-3 text-[14px] text-white/80">
-                {resume.education.degree} · {resume.education.school} · {resume.education.when}
-              </p>
+              <Box className="mt-6">
+                <H>Education</H>
+                <p className="mt-3 text-[14px] text-white/80">
+                  {resume.education.degree} · {resume.education.school} · {resume.education.when}
+                </p>
+              </Box>
 
-              <H>Skills</H>
-              <p className="mt-3 text-[13px] leading-relaxed text-white/70">{resume.skills.join(" · ")}</p>
+              <Box>
+                <H>Skills</H>
+                <p className="mt-3 text-[13px] leading-relaxed text-white/70">{resume.skills.join(" · ")}</p>
+              </Box>
 
-              <H>Languages</H>
-              <p className="mt-3 text-[13px] text-white/70">{resume.languages.join(" · ")}</p>
+              <Box>
+                <H>Languages</H>
+                <p className="mt-3 text-[13px] text-white/70">{resume.languages.join(" · ")}</p>
+              </Box>
 
-              <H>Beyond the roles</H>
-              <ul className="mt-3 list-disc space-y-1.5 ps-5 text-[13px] leading-relaxed text-white/70 marker:text-white/30">
-                {resume.extras.map((e) => (
-                  <li key={e}>{e}</li>
-                ))}
-              </ul>
+              <Box>
+                <H>Beyond the roles</H>
+                <ul className="mt-3 list-disc space-y-1.5 ps-5 text-[13px] leading-relaxed text-white/70 marker:text-white/30">
+                  {resume.extras.map((e) => (
+                    <li key={e}>{e}</li>
+                  ))}
+                </ul>
+              </Box>
             </motion.article>
           </div>
         </motion.div>

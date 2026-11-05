@@ -143,3 +143,13 @@ body {
   outline: 1px solid rgba(255, 255, 255, 0.4);
   outline-offset: 6px;
 }
+
+/* The résumé's neon sections: hairline border and a soft glow in the signal colour. */
+.neon-box {
+  border: 1px solid color-mix(in srgb, var(--signal) 35%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--signal) 20%, transparent), inset 0 0 22px color-mix(in srgb, var(--signal) 5%, transparent);
+  background: color-mix(in srgb, var(--signal) 3%, transparent);
+}
+.neon-cell {
+  border: 1px solid color-mix(in srgb, var(--signal) 18%, transparent);
+}
