@@ -17,7 +17,7 @@
  * - Never a locked rail: the camera floats, weightless, drifting on X and Y
  *   and rolling about 2 degrees, like a body detached in orbit.
  */
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { chapters } from "@/content/story";
@@ -26,6 +26,8 @@ import { setLens } from "@/lib/lens";
 import { BH_RADIUS, BLACK_HOLE, cameraCurve, careerCurve, keyLook, ORBITS, tForU, WORMHOLE_T } from "@/lib/stage";
 import { careerReveal, colorAt } from "@/lib/timeline";
 import { PX, PX_BASE } from "@/lib/px";
+import { scroll } from "@/lib/scroll";
+import { easing } from "maath";
 import { prng } from "@/lib/math";
 
 /** Camera spring stiffness (rad/s): mass you can feel, lag you can't. */
@@ -36,25 +38,57 @@ const smooth = (a: number, b: number, x: number) => {
   return t * t * (3 - 2 * t);
 };
 
+// Section geometry, measured once (and again on resize or when layout
+// changes), so reading the scroll each frame never forces a layout.
+const tops: number[] = [];
+const heights: number[] = [];
+let measured = false;
+function measure() {
+  tops.length = 0;
+  heights.length = 0;
+  document.querySelectorAll<HTMLElement>("[data-chapter]").forEach((el) => {
+    const r = el.getBoundingClientRect();
+    tops.push(r.top + window.scrollY);
+    heights.push(r.height);
+  });
+  measured = tops.length > 0;
+}
 function readScroll() {
-  const els = document.querySelectorAll<HTMLElement>("[data-chapter]");
+  if (!measured) measure();
   const vh = window.innerHeight;
+  const y = window.scrollY;
   let section = 0;
   let frac = 0;
-  els.forEach((el, i) => {
-    const r = el.getBoundingClientRect();
-    const span = Math.max(1, r.height - vh);
-    if (r.top <= 1) {
+  for (let i = 0; i < tops.length; i++) {
+    const top = tops[i] - y;
+    if (top <= 1) {
       section = i;
-      frac = Math.min(1, -r.top / span);
+      frac = Math.min(1, -top / Math.max(1, heights[i] - vh));
     }
-  });
+  }
   film.section = Math.min(section, CHAPTERS - 1);
   film.frac = frac;
 }
 
 export function Director() {
   const { camera, pointer, gl, size } = useThree();
+  // Re-measure the sections whenever the layout changes.
+  useEffect(() => {
+    const again = () => (measured = false);
+    const ro = new ResizeObserver(again);
+    ro.observe(document.body);
+    window.addEventListener("resize", again);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", again);
+    };
+  }, []);
+  // One clock: advance the smooth scroll first, then the camera reads it.
+  useFrame(() => {
+    const t = performance.now();
+    scroll.lenis?.raf(t);
+    scroll.drivenAt = t;
+  }, -2);
   const look = useMemo(() => new THREE.Vector3(), []);
   const ahead = useMemo(() => new THREE.Vector3(), []);
   const bhS = useMemo(() => new THREE.Vector3(), []);
@@ -302,8 +336,9 @@ export function Director() {
       lookS.copy(look);
       started.current = true;
     } else {
-      camS.lerp(pos, 1 - Math.exp(-dt * 9));
-      lookS.lerp(look, 1 - Math.exp(-dt * 5.5));
+      // Critically damped (no overshoot, no instant start), frame-rate independent.
+      easing.damp3(camS, pos, 0.11, dt, 400);
+      easing.damp3(lookS, look, 0.18, dt, 600);
     }
     camera.position.copy(camS);
     camera.lookAt(lookS);
@@ -319,7 +354,7 @@ export function Director() {
     // ...the hold slowly zooms the lens in with the scroll; the break stretches it wide.
     const fov = base + (Math.min(18, film.speed * 30) - film.crisis * 6 + jolt * 9 - film.close * 5 - 3.5 * hp + 22 * Math.pow(b, 1.4)) * (film.reduced ? 0 : 1);
     if (Math.abs(cam.fov - fov) > 0.01) {
-      cam.fov += (fov - cam.fov) * Math.min(1, dt * (jolt > 0.2 || b > 0.3 ? 14 : 4));
+      easing.damp(cam, "fov", fov, jolt > 0.2 || b > 0.3 ? 0.07 : 0.25, dt);
       cam.updateProjectionMatrix();
     }
 

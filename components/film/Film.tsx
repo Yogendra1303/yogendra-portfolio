@@ -3,8 +3,9 @@
  * Worldlines: the whole career as one continuous shot.
  * Scrolling moves a camera through space; each chapter is a world.
  */
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useFrame } from "@react-three/fiber";
 import Lenis from "lenis";
+import { scroll } from "@/lib/scroll";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { PerformanceMonitor } from "@react-three/drei";
 import { ResumeCard } from "./ResumeCard";
@@ -36,6 +37,20 @@ import { Wormhole } from "./worlds/Wormhole";
 
 const { gurugram, bengaluru, dubai } = CITIES;
 
+/** Applies a pending resolution drop only while the frame is (nearly) black. */
+function QualityGate({ pending, apply }: { pending: React.MutableRefObject<number | null>; apply: (d: number) => void }) {
+  useFrame(() => {
+    const p = pending.current;
+    if (p === null) return;
+    // Hidden moments only: the opening, inside the black hole, or a fast move.
+    if ((film.clock < 6 && film.u < 0.4) || film.dark > 0.8 || film.speed > 0.25) {
+      apply(p);
+      pending.current = null;
+    }
+  });
+  return null;
+}
+
 /** The address's jump (?chapter=), read once: the address is cleaned after the jump. */
 const initialSearch = typeof window !== "undefined" ? window.location.search : "";
 
@@ -58,8 +73,16 @@ export default function Film() {
     if (!film.reduced) {
       // Light, quick smoothing: the camera supplies the weight (a spring in the
       // Director), so the page itself should answer the wheel at once.
-      lenis.current = new Lenis({ lerp: 0.085, smoothWheel: true, wheelMultiplier: 1.2, touchMultiplier: 1.5, autoRaf: true });
+      lenis.current = new Lenis({ lerp: 0.085, smoothWheel: true, wheelMultiplier: 1.2, touchMultiplier: 1.5, autoRaf: false });
+      scroll.lenis = lenis.current;
     }
+    // Fallback clock: only if the 3D frame loop is not driving the scroll.
+    let fallback = 0;
+    const tick = (t: number) => {
+      if (performance.now() - scroll.drivenAt > 120) lenis.current?.raf(t);
+      fallback = requestAnimationFrame(tick);
+    };
+    fallback = requestAnimationFrame(tick);
     // The link always opens on the first frame: never resume mid-film.
     if ("scrollRestoration" in history) history.scrollRestoration = "manual";
     // QA helper: ?chapter=5 starts on chapter 5.
@@ -90,6 +113,8 @@ export default function Film() {
     window.addEventListener("click", click, true);
     return () => {
       window.removeEventListener("click", click, true);
+      cancelAnimationFrame(fallback);
+      scroll.lenis = null;
       lenis.current?.destroy();
     };
   }, []);
@@ -99,6 +124,9 @@ export default function Film() {
   // up when they are steady again. Phones start a step lower.
   const [dprMax] = useState(() => (typeof window !== "undefined" && (window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768) ? 1.3 : 1.75));
   const [dpr, setDpr] = useState(dprMax);
+  // A drop in resolution is never shown mid-shot: it waits for the opening
+  // (mostly black) or the inside of the black hole.
+  const pendingDpr = useRef<number | null>(null);
   // The name takes you home: back to the first frame, through the whole film at speed.
   const home = useCallback(() => {
     film.clickDark = true;
@@ -135,7 +163,8 @@ export default function Film() {
         >
           <color attach="background" args={["#000000"]} />
           {/* Steps down only (each change resizes the post-processing buffers, a hitch of its own). */}
-          <PerformanceMonitor bounds={() => [48, 60]} flipflops={2} onDecline={() => setDpr((d) => Math.max(0.9, +(d - 0.3).toFixed(2)))} />
+          <PerformanceMonitor bounds={() => [48, 60]} flipflops={2} onDecline={() => (pendingDpr.current = Math.max(0.9, +((pendingDpr.current ?? dpr) - 0.3).toFixed(2)))} />
+          <QualityGate pending={pendingDpr} apply={setDpr} />
           <Suspense fallback={null}>
             <Director />
             <Backdrop />

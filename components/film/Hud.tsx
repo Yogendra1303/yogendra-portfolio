@@ -20,6 +20,7 @@ import { FileText, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { chapters, owner } from "@/content/story";
 import { CUTS, film } from "@/lib/film";
 import { startScore, stopScore, updateScore } from "@/lib/score";
+import { LITE } from "@/lib/lite";
 import type { PlaybackState } from "./useAutoplay";
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -71,6 +72,9 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
   const proper = useRef<HTMLSpanElement>(null);
   const ratio = useRef<HTMLParagraphElement>(null);
   const progress = useRef<HTMLSpanElement>(null);
+  // ?fps shows real numbers on any device: fps, p95 frame time, resolution, tier.
+  const [showFps, setShowFps] = useState(false);
+  const fpsEl = useRef<HTMLParagraphElement>(null);
   const warpImg = useRef<SVGFEImageElement>(null);
   const warp = useRef<SVGFEDisplacementMapElement>(null);
   const [current, setCurrent] = useState(0);
@@ -84,6 +88,9 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
     let glitchUntil = 0;
     let warping = false;
     let yearMode = 0; // 0 plain, 1 falling into the hole, 2 inside the tunnel
+    const frames: number[] = [];
+    let lastT = 0;
+    let fpsAt = 0;
     const loop = (now: number) => {
       // Letterbox: always a hint of 2.39:1, closing in further with speed and pressure.
       const bar = Math.min(7, 4 + film.speed * 12 + film.presence(0) * 2 + film.crisis * 2);
@@ -221,6 +228,19 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
         last = c;
         setCurrent(c);
       }
+      if (fpsEl.current) {
+        if (lastT) frames.push(now - lastT);
+        if (frames.length > 120) frames.shift();
+        if (now - fpsAt > 500 && frames.length > 10) {
+          fpsAt = now;
+          const sorted = [...frames].sort((x, y) => x - y);
+          const avg = frames.reduce((x, y) => x + y, 0) / frames.length;
+          const cv = document.querySelector("canvas");
+          const dpr = cv ? cv.width / Math.max(1, cv.clientWidth) : 0;
+          fpsEl.current.textContent = `${Math.round(1000 / avg)} fps · p95 ${sorted[Math.floor(sorted.length * 0.95)].toFixed(1)} ms · dpr ${dpr.toFixed(2)} · ${LITE ? "touch" : "desktop"}`;
+        }
+      }
+      lastT = now;
       // How far through the film you are: a hairline under the counter.
       if (progress.current) progress.current.style.transform = `scaleX(${Math.min(1, Math.max(0, film.u / (chapters.length - 1))).toFixed(4)})`;
       // Two clocks: frames at 24 per second.
@@ -248,6 +268,8 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
       stopScore();
     };
   }, []);
+
+  useEffect(() => setShowFps(new URLSearchParams(window.location.search).has("fps")), []);
 
   // The score starts with the first click or key anywhere (browsers allow
   // sound only after a gesture) and then plays continuously; Sound turns it off.
@@ -340,6 +362,7 @@ export function Hud({ player, onHome, onResume }: { player: Player; onHome: () =
           <span className="text-white/90">{c.index}</span> / {chapters[chapters.length - 1].index}
           {current > 0 && <span className="hidden sm:inline"> · {c.title}</span>}
         </p>
+        {showFps && <p ref={fpsEl} className="mt-2 font-mono text-[9px] tracking-[0.1em] text-[var(--signal)]" />}
         <span aria-hidden className="mt-2 block h-px w-16 bg-white/15">
           <span ref={progress} className="block h-px w-full origin-left bg-white/70" style={{ transform: "scaleX(0)" }} />
         </span>

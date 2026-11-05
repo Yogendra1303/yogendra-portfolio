@@ -15,8 +15,7 @@
  */
 import { useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
-import { Bloom, EffectComposer, SMAA } from "@react-three/postprocessing";
-import { LITE } from "@/lib/lite";
+import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import { Effect, EffectAttribute, ShaderPass } from "postprocessing";
 import * as THREE from "three";
 import { film } from "@/lib/film";
@@ -444,11 +443,8 @@ export function Effects() {
   return (
     <EffectComposer multisampling={0}>
       <primitive object={fracture} dispose={null} />
-      <Bloom intensity={1.1} luminanceThreshold={0.16} luminanceSmoothing={0.35} mipmapBlur radius={0.8} levels={LITE ? 5 : 8} />
-      {/* Phones skip the light shafts and lens fringing: a full extra pass each. */}
-      {LITE ? <></> : <primitive object={optics} dispose={null} />}
-      {/* Edge anti-aliasing for the hairlines (hardware multisampling breaks this effect stack). */}
-      {LITE ? <></> : <SMAA />}
+      <Bloom intensity={1.1} luminanceThreshold={0.16} luminanceSmoothing={0.35} mipmapBlur radius={0.8} levels={8} />
+      <primitive object={optics} dispose={null} />
       <primitive object={grade} dispose={null} />
     </EffectComposer>
   );

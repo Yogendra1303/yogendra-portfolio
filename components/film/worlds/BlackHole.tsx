@@ -16,7 +16,6 @@ import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { film, HORIZON_U } from "@/lib/film";
 import { BH_BOUNDS, BH_RADIUS, BLACK_HOLE } from "@/lib/stage";
-import { LITE } from "@/lib/lite";
 
 const vert = /* glsl */ `
   varying vec3 vWorld;
@@ -68,12 +67,12 @@ const frag = /* glsl */ `
     bool captured = false;
     float prevSide = dot(p, n);
 
-    for (int i = 0; i < ${LITE ? 95 : 170}; i++) {
+    for (int i = 0; i < 170; i++) {
       float r = length(p);
       minR = min(minR, r);
       if (r < rs) { captured = true; break; }
       if (r > uBounds * 1.02 && dot(p, dir) > 0.0) break;
-      float stepLen = clamp(${LITE ? "0.085" : "0.05"} * r, 0.015, 0.6);
+      float stepLen = clamp(0.05 * r, 0.015, 0.6);
       vec3 pn = p + dir * stepLen;
       float side = dot(pn, n);
       if (side * prevSide < 0.0) {

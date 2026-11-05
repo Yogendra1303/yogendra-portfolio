@@ -48,7 +48,7 @@ const vert = withPx(/* glsl */ `
     float focus = smoothstep(1.0, 9.0, depth);
     vWarm = max(fwd, uGold * step(0.72, aSeed.y));
     vA = (0.06 + fwd * 1.6 + uGold * step(0.72, aSeed.y) * 0.5) * (1.0 - smoothstep(16.0, 23.0, depth)) * (0.35 + 0.65 * focus) * smoothstep(0.4, 1.4, depth) * edge;
-    gl_PointSize = (2.0 + (1.0 - focus) * 9.0) * (0.6 + aSeed.x) * (60.0 / max(depth, 0.5)) * 0.12;
+    gl_PointSize = min(64.0 / max(uPx, 0.01), (2.0 + (1.0 - focus) * 9.0) * (0.6 + aSeed.x) * (60.0 / max(depth, 0.5)) * 0.12);
     gl_Position = projectionMatrix * mv;
   }
 `);
