@@ -33,7 +33,7 @@ const SIDE = {
 function Layer({ children, side, opacity, visibility, y, hidden = true }: { children: React.ReactNode; side: Chapter["side"]; opacity: MotionValue<number>; visibility: MotionValue<string>; y?: MotionValue<number>; hidden?: boolean }) {
   return (
     <motion.div aria-hidden={hidden || undefined} style={{ opacity, visibility, y }} className={`absolute inset-0 flex items-end px-6 pb-[24vh] sm:items-center sm:pb-0 ${SIDE[side]}`}>
-      <div className="text-scrim relative max-w-[min(92vw,44rem)]">{children}</div>
+      <div className="warp-target text-scrim relative max-w-[min(92vw,44rem)]">{children}</div>
     </motion.div>
   );
 }
@@ -85,7 +85,7 @@ function Slate({ ctx, shot, w, first }: { ctx: Ctx; shot: Extract<Shot, { kind: 
   const ghost = isName ? "#7cffc4" : c.color;
   return (
     <motion.div aria-hidden style={{ opacity, visibility }} className={`absolute inset-0 flex justify-center px-5 text-center ${c.titleTop ? "items-end pb-[14vh] sm:items-start sm:pb-0 sm:pt-[11vh]" : "items-center"}`}>
-      <div className="text-scrim relative flex flex-col items-center">
+      <div className="warp-target text-scrim relative flex flex-col items-center">
         <p className="ps-[0.6em] font-mono text-[10px] uppercase tracking-[0.6em] text-white/45">
           {isName ? shot.slug : first ? `Chapter ${c.index}` : c.index}
         </p>
@@ -134,7 +134,7 @@ function Say({ ctx, shot, w }: { ctx: Ctx; shot: Extract<Shot, { kind: "say" }>;
   return (
     <motion.div aria-hidden style={{ opacity, visibility, y }} className="absolute inset-x-0 bottom-[17vh] flex justify-center px-6 sm:bottom-[15vh]">
       <p
-        className="relative max-w-[34ch] text-center font-serif text-[clamp(1.35rem,2.6vw,2.3rem)] italic leading-snug text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.95),0_0_2px_rgba(0,0,0,0.9)]"
+        className="warp-target relative max-w-[34ch] text-center font-serif text-[clamp(1.35rem,2.6vw,2.3rem)] italic leading-snug text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.95),0_0_2px_rgba(0,0,0,0.9)]"
         style={shot.em ? { color: c.color } : undefined}
       >
         <Echo p={p} a={w.a} b={w.b} color={c.color} reduced={reduced}>

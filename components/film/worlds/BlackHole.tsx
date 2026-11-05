@@ -12,7 +12,7 @@
  * slow here (film.time dilates), so the disk turns heavier as you fall.
  */
 import { useMemo, useRef } from "react";
-import { useFrame } from "@react-three/fiber";
+import { createPortal, useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { film, HORIZON_U } from "@/lib/film";
 import { BH_BOUNDS, BH_RADIUS, BLACK_HOLE } from "@/lib/stage";
@@ -124,6 +124,17 @@ const frag = /* glsl */ `
   }
 `;
 
+/** Full-frame composite of the half-resolution hole (premultiplied alpha). */
+const compVert = /* glsl */ `
+  varying vec2 vUv;
+  void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }
+`;
+const compFrag = /* glsl */ `
+  uniform sampler2D uTex;
+  varying vec2 vUv;
+  void main() { gl_FragColor = texture2D(uTex, vUv); }
+`;
+
 export function BlackHole() {
   const mat = useRef<THREE.ShaderMaterial>(null);
   const mesh = useRef<THREE.Mesh>(null);
@@ -138,27 +149,69 @@ export function BlackHole() {
     }),
     [],
   );
-  useFrame(() => {
-    if (!mat.current || !mesh.current) return;
-    // Tears open with a slight overshoot, then holds. Gone once we are through.
+  // Ray-marched into a half-resolution buffer and scaled up over the frame:
+  // the hole is smooth, so a quarter of the pixels look the same and cost a
+  // quarter as much (it was the heaviest pass in the film when it fills the screen).
+  const scene = useMemo(() => new THREE.Scene(), []);
+  const rt = useMemo(() => new THREE.WebGLRenderTarget(2, 2, { type: THREE.HalfFloatType, depthBuffer: false }), []);
+  const quad = useRef<THREE.Mesh>(null);
+  const clear = useMemo(() => new THREE.Color(), []);
+  useFrame(({ gl, camera, size }) => {
+    if (!mat.current || !mesh.current || !quad.current) return;
     const open = film.bhOpen;
-    mesh.current.visible = open > 0.001 && film.u < HORIZON_U;
+    const on = open > 0.001 && film.u < HORIZON_U;
+    mesh.current.visible = on;
+    quad.current.visible = on;
     mat.current.uniforms.uOpen.value = open;
     mat.current.uniforms.uTime.value = film.time;
+    if (!on) return;
+    // Half resolution while it holds; lower still in the fall, where it fills
+    // the frame and the motion hides the difference.
+    const k = film.u > 2.01 ? 0.36 : 0.5;
+    const w = Math.max(2, Math.round(size.width * gl.getPixelRatio() * k));
+    const h = Math.max(2, Math.round(size.height * gl.getPixelRatio() * k));
+    if (rt.width !== w || rt.height !== h) rt.setSize(w, h);
+    const prev = gl.getRenderTarget();
+    gl.getClearColor(clear);
+    const alpha = gl.getClearAlpha();
+    gl.setRenderTarget(rt);
+    gl.setClearColor(0x000000, 0);
+    gl.clear(true, false, false);
+    gl.render(scene, camera);
+    gl.setRenderTarget(prev);
+    gl.setClearColor(clear, alpha);
   });
   return (
-    <mesh ref={mesh} position={BLACK_HOLE} renderOrder={5} frustumCulled={false}>
-      <sphereGeometry args={[BH_BOUNDS, 48, 32]} />
-      <shaderMaterial
-        ref={mat}
-        vertexShader={vert}
-        fragmentShader={frag}
-        uniforms={uniforms}
-        side={THREE.BackSide}
-        transparent
-        premultipliedAlpha
-        depthWrite={false}
-      />
-    </mesh>
+    <>
+      {createPortal(
+        <mesh ref={mesh} position={BLACK_HOLE} frustumCulled={false}>
+          <sphereGeometry args={[BH_BOUNDS, 48, 32]} />
+          <shaderMaterial
+            ref={mat}
+            vertexShader={vert}
+            fragmentShader={frag}
+            uniforms={uniforms}
+            side={THREE.BackSide}
+            transparent
+            premultipliedAlpha
+            depthWrite={false}
+            depthTest={false}
+          />
+        </mesh>,
+        scene,
+      )}
+      <mesh ref={quad} renderOrder={5} frustumCulled={false}>
+        <planeGeometry args={[2, 2]} />
+        <shaderMaterial
+          vertexShader={compVert}
+          fragmentShader={compFrag}
+          uniforms={{ uTex: { value: rt.texture } }}
+          transparent
+          premultipliedAlpha
+          depthTest={false}
+          depthWrite={false}
+        />
+      </mesh>
+    </>
   );
 }

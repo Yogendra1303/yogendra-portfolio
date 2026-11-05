@@ -122,7 +122,7 @@ export default function Film() {
   const [resumeOpen, setResumeOpen] = useState(false);
   // Adaptive quality: render resolution steps down when frames drop and back
   // up when they are steady again. Phones start a step lower.
-  const [dprMax] = useState(() => (typeof window !== "undefined" && (window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768) ? 1.3 : 1.75));
+  const [dprMax] = useState(() => (typeof window !== "undefined" && (window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768) ? 1.3 : 1.5));
   const [dpr, setDpr] = useState(dprMax);
   // A drop in resolution is never shown mid-shot: it waits for the opening
   // (mostly black) or the inside of the black hole.
@@ -163,7 +163,7 @@ export default function Film() {
         >
           <color attach="background" args={["#000000"]} />
           {/* Steps down only (each change resizes the post-processing buffers, a hitch of its own). */}
-          <PerformanceMonitor bounds={() => [48, 60]} flipflops={2} onDecline={() => (pendingDpr.current = Math.max(0.9, +((pendingDpr.current ?? dpr) - 0.3).toFixed(2)))} />
+          <PerformanceMonitor bounds={() => [55, 62]} flipflops={3} onDecline={() => (pendingDpr.current = Math.max(0.9, +((pendingDpr.current ?? dpr) - 0.3).toFixed(2)))} />
           <QualityGate pending={pendingDpr} apply={setDpr} />
           <Suspense fallback={null}>
             <Director />

@@ -93,8 +93,9 @@ body {
   }
 }
 
-/* Gravity on the words: the text frame bends around the crisis mass (see Hud.tsx). */
-.warp .frame {
+/* Gravity on the words: the text block on screen bends around the crisis mass (see Hud.tsx).
+   Scoped to the text itself, not the whole frame, so it is cheap enough for phones. */
+.warp .frame .warp-target {
   filter: url(#gravity-warp);
 }
 
@@ -115,11 +116,7 @@ body {
 @media (max-width: 639px) {
   :root { --bar-max: 3vh; --hud-x: 16px; }
 }
-/* Phones: drop the costly layers (the WebGL pass already has grain). */
-@media (max-width: 639px), (pointer: coarse) {
-  .film-grain { display: none; }
-  .warp .frame { filter: none; }
-}
+
 
 /* The time axis in the closing tesseract: a hairline with a glowing cursor. */
 .time-axis {

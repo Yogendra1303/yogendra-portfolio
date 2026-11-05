@@ -1,6 +1,6 @@
 /**
- * Phones and small touch screens render a lighter film: fewer particles,
- * fewer ray-march steps, no light-shaft pass. Same story, same shots.
+ * Touch and small screens. Phones get the same film as laptops (parity);
+ * this flag only sets the starting render resolution and the ?fps label.
  * Read once on the client (the 3D scene never renders on the server).
  */
 export const LITE =
