@@ -3,7 +3,8 @@
  * Worldlines: the whole career as one continuous shot.
  * Scrolling moves a camera through space; each chapter is a world.
  */
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { warm } from "@/lib/warm";
 import Lenis from "lenis";
 import { scroll } from "@/lib/scroll";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
@@ -36,6 +37,57 @@ import { Science } from "./worlds/Science";
 import { Wormhole } from "./worlds/Wormhole";
 
 const { gurugram, bengaluru, dubai } = CITIES;
+
+/**
+ * Compile every shader during the opening, so nothing compiles mid-film
+ * (on a phone the black hole's ray-march alone can take a second). Hidden
+ * worlds are shown for the one synchronous compile call, then restored.
+ */
+function Warmup() {
+  const { gl, scene, camera } = useThree();
+  useEffect(() => {
+    let alive = true;
+    const compileAll = (root: THREE.Object3D) => {
+      const hidden: THREE.Object3D[] = [];
+      root.traverse((o) => {
+        if (!o.visible) {
+          hidden.push(o);
+          o.visible = true;
+        }
+      });
+      const done = gl.compileAsync(root, camera);
+      hidden.forEach((o) => (o.visible = false));
+      return done;
+    };
+    const id = requestAnimationFrame(async () => {
+      if (!alive) return;
+      // Compile against an off-screen buffer, as the film renders (into the
+      // effect chain's buffers), so the variants match the ones used later.
+      const prev = gl.getRenderTarget();
+      const tmp = new THREE.WebGLRenderTarget(4, 4, { type: THREE.HalfFloatType });
+      gl.setRenderTarget(tmp);
+      const jobs: Promise<unknown>[] = [compileAll(scene)];
+      warm.scenes.forEach((s) => jobs.push(compileAll(s)));
+      if (warm.materials.size) {
+        const s = new THREE.Scene();
+        const quad = new THREE.PlaneGeometry(2, 2);
+        warm.materials.forEach((m) => s.add(new THREE.Mesh(quad, m)));
+        jobs.push(gl.compileAsync(s, camera));
+      }
+      gl.setRenderTarget(prev);
+      await Promise.all(jobs).catch(() => undefined);
+      tmp.dispose();
+      const w = window as unknown as { __programs?: () => number; __warm?: number };
+      w.__programs = () => gl.info.programs?.length ?? 0;
+      w.__warm = w.__programs();
+    });
+    return () => {
+      alive = false;
+      cancelAnimationFrame(id);
+    };
+  }, [gl, scene, camera]);
+  return null;
+}
 
 /** Applies a pending resolution drop only while the frame is (nearly) black. */
 function QualityGate({ pending, apply }: { pending: React.MutableRefObject<number | null>; apply: (d: number) => void }) {
@@ -169,6 +221,7 @@ export default function Film() {
           {/* Steps down only (each change resizes the post-processing buffers, a hitch of its own). */}
           <PerformanceMonitor bounds={() => [55, 62]} flipflops={3} onDecline={() => (pendingDpr.current = Math.max(0.9, +((pendingDpr.current ?? dpr) - 0.3).toFixed(2)))} />
           <QualityGate pending={pendingDpr} apply={setDpr} />
+          <Warmup />
           <Suspense fallback={null}>
             <Director />
             <Backdrop />

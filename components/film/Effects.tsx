@@ -18,6 +18,7 @@ import { useFrame } from "@react-three/fiber";
 import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import { Effect, EffectAttribute, ShaderPass } from "postprocessing";
 import { OFF } from "@/lib/debug";
+import { warm } from "@/lib/warm";
 import * as THREE from "three";
 import { film } from "@/lib/film";
 import { prng } from "@/lib/math";
@@ -242,6 +243,7 @@ class OpticsEffect extends Effect {
       depthWrite: false,
     });
     this.pass = new ShaderPass(this.shafts, "inputBuffer");
+    warm.materials.add(this.shafts);
   }
   update(renderer: THREE.WebGLRenderer, inputBuffer: THREE.WebGLRenderTarget) {
     const on = this.shafts.uniforms.uStrength.value > 0.002;

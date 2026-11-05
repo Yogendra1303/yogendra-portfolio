@@ -11,7 +11,8 @@
  * and the nebula wrap into an Einstein ring around this shadow. Time runs
  * slow here (film.time dilates), so the disk turns heavier as you fall.
  */
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { warm } from "@/lib/warm";
 import { createPortal, useFrame } from "@react-three/fiber";
 import { OFF } from "@/lib/debug";
 import * as THREE from "three";
@@ -155,6 +156,10 @@ export function BlackHole() {
   // the hole is smooth, so a quarter of the pixels look the same and cost a
   // quarter as much (it was the heaviest pass in the film when it fills the screen).
   const scene = useMemo(() => new THREE.Scene(), []);
+  useEffect(() => {
+    warm.scenes.add(scene);
+    return () => void warm.scenes.delete(scene);
+  }, [scene]);
   const rt = useMemo(() => new THREE.WebGLRenderTarget(2, 2, { type: THREE.HalfFloatType, depthBuffer: false }), []);
   const quad = useRef<THREE.Mesh>(null);
   const clear = useMemo(() => new THREE.Color(), []);
