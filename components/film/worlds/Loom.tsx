@@ -21,10 +21,13 @@ const SEG = 14;
 const vert = /* glsl */ `
   attribute float aT; attribute float aSeed;
   uniform vec3 uCam; uniform float uTime;
-  varying float vT; varying float vSeed; varying float vDepth;
+  varying float vT; varying float vSeed; varying float vDepth; varying float vEdge;
   void main() {
     vec3 p = position + vec3(sin(uTime * 0.03 + aSeed * 40.0), sin(uTime * 0.025 + aSeed * 23.0), cos(uTime * 0.028 + aSeed * 31.0)) * 3.0;
     p = mod(p - uCam + ${(BOX / 2).toFixed(1)}, ${BOX.toFixed(1)}) - ${(BOX / 2).toFixed(1)} + uCam;
+    // Fade out near the wrap boundary, so a strand jumping to the far side is never seen.
+    vec3 q = abs(p - uCam);
+    vEdge = 1.0 - smoothstep(${(BOX * 0.36).toFixed(1)}, ${(BOX * 0.46).toFixed(1)}, max(q.x, max(q.y, q.z)));
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
     vT = aT; vSeed = aSeed; vDepth = -mv.z;
     gl_Position = projectionMatrix * mv;
@@ -32,11 +35,11 @@ const vert = /* glsl */ `
 `;
 const frag = /* glsl */ `
   uniform float uTime; uniform float uOn;
-  varying float vT; varying float vSeed; varying float vDepth;
+  varying float vT; varying float vSeed; varying float vDepth; varying float vEdge;
   void main() {
     float lit = step(0.9, vSeed);
     float spark = pow(fract(vT * 2.0 - uTime * 0.35 + vSeed * 9.0), 30.0) * lit;
-    float fade = smoothstep(4.0, 14.0, vDepth) * (1.0 - smoothstep(40.0, 60.0, vDepth));
+    float fade = smoothstep(4.0, 14.0, vDepth) * (1.0 - smoothstep(40.0, 60.0, vDepth)) * vEdge;
     vec3 dim = vec3(0.1, 0.22, 0.24);
     vec3 green = vec3(0.3, 1.0, 0.6);
     vec3 col = mix(dim, green, lit * 0.8) * (0.1 + lit * 0.22) + green * spark * 1.6;

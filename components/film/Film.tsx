@@ -97,7 +97,7 @@ export default function Film() {
   const [resumeOpen, setResumeOpen] = useState(false);
   // Adaptive quality: render resolution steps down when frames drop and back
   // up when they are steady again. Phones start a step lower.
-  const [dprMax] = useState(() => (typeof window !== "undefined" && (window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768) ? 1.15 : 1.75));
+  const [dprMax] = useState(() => (typeof window !== "undefined" && (window.matchMedia("(pointer: coarse)").matches || window.innerWidth < 768) ? 1.3 : 1.75));
   const [dpr, setDpr] = useState(dprMax);
   // The name takes you home: back to the first frame, through the whole film at speed.
   const home = useCallback(() => {
@@ -130,7 +130,7 @@ export default function Film() {
       <div className="fixed inset-0 z-0 bg-black" aria-hidden>
         <Canvas
           dpr={dpr}
-          camera={{ position: [6.5, 2.2, 34], fov: 48, near: 0.05, far: 4000 }}
+          camera={{ position: [6.5, 2.2, 34], fov: 48, near: 0.1, far: 2200 }}
           gl={{ antialias: false, powerPreference: "high-performance", toneMapping: THREE.ACESFilmicToneMapping }}
         >
           <color attach="background" args={["#000000"]} />

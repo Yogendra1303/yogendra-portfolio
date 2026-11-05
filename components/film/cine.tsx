@@ -25,7 +25,7 @@ function hash(n: number) {
  * resolve is timed (about 0.4 s), not scrubbed, so it never freezes half-done
  * when the scroll stops; scrolling back does not re-scramble it. `center`
  * settles letters from the middle outward; `seed` changes the noise (so a
- * ghost copy scrambles differently). Phones show the word straight away.
+ * ghost copy scrambles differently). Same on phones and desktop.
  */
 const DECODE_MS = 420;
 export function Decode({ p, a, text, reduced, center, seed = 0 }: { p: MotionValue<number>; a: number; b?: number; text: string; reduced?: boolean; center?: boolean; seed?: number }) {
@@ -51,7 +51,7 @@ export function Decode({ p, a, text, reduced, center, seed = 0 }: { p: MotionVal
   };
   const draw = (v: number) => {
     const S = st.current;
-    const instant = reduced || (typeof window !== "undefined" && window.innerWidth < 640);
+    const instant = !!reduced;
     if (v < a) {
       // Before the cue: ready to resolve again (it is faded out here anyway).
       if (S.started) {

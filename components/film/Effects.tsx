@@ -427,8 +427,8 @@ export function Effects() {
     const u = grade.uniforms;
     u.get("uCrisis")!.value = film.crisis;
     (u.get("uTint")!.value as THREE.Color).copy(film.tint);
-    u.get("uFrame")!.value = film.reduced ? 0 : Math.floor(film.clock * 24);
-    u.get("uFlicker")!.value = calm;
+    u.get("uFrame")!.value = film.reduced ? 0 : Math.floor(film.clock * 60);
+    u.get("uFlicker")!.value = 0; // no exposure flicker: it read as a fault, not as film
     const t = film.sinceCut;
     let flash = 0;
     if (!film.reduced && t < 1.2) {

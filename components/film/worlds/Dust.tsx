@@ -37,6 +37,8 @@ const vert = /* glsl */ `
     vec3 drift = vec3(sin(uTime * 0.05 + aSeed.x * 6.3), sin(uTime * 0.04 + aSeed.y * 6.3), cos(uTime * 0.045 + aSeed.z * 6.3)) * (1.5 + uChurn * 6.0);
     vec3 p = position + drift;
     p = mod(p - uCam + ${(BOX / 2).toFixed(1)}, ${BOX.toFixed(1)}) - ${(BOX / 2).toFixed(1)} + uCam;
+    vec3 q = abs(p - uCam);
+    float edge = 1.0 - smoothstep(${(BOX * 0.36).toFixed(1)}, ${(BOX * 0.47).toFixed(1)}, max(q.x, max(q.y, q.z)));
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
     float depth = -mv.z;
     vec3 toDust = normalize(p - cameraPosition);
@@ -44,7 +46,7 @@ const vert = /* glsl */ `
     float fwd = pow(max(0.0, dot(toDust, toLight)), 18.0) * uLightOn;
     float focus = smoothstep(1.0, 9.0, depth);
     vWarm = max(fwd, uGold * step(0.72, aSeed.y));
-    vA = (0.06 + fwd * 1.6 + uGold * step(0.72, aSeed.y) * 0.5) * (1.0 - smoothstep(16.0, 23.0, depth)) * (0.35 + 0.65 * focus) * smoothstep(0.4, 1.4, depth);
+    vA = (0.06 + fwd * 1.6 + uGold * step(0.72, aSeed.y) * 0.5) * (1.0 - smoothstep(16.0, 23.0, depth)) * (0.35 + 0.65 * focus) * smoothstep(0.4, 1.4, depth) * edge;
     gl_PointSize = (2.0 + (1.0 - focus) * 9.0) * (0.6 + aSeed.x) * (60.0 / max(depth, 0.5)) * 0.12;
     gl_Position = projectionMatrix * mv;
   }
