@@ -9,12 +9,13 @@
  */
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+import { lite } from "@/lib/lite";
 import * as THREE from "three";
 import { film } from "@/lib/film";
 import { prng } from "@/lib/math";
 
 const BOX = 120;
-const STRANDS = 170;
+const STRANDS = lite(170);
 const SEG = 14;
 
 const vert = /* glsl */ `

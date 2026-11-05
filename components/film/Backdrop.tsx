@@ -12,6 +12,7 @@
  */
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
+import { lite } from "@/lib/lite";
 import * as THREE from "three";
 import { prng } from "@/lib/math";
 import { film } from "@/lib/film";
@@ -62,7 +63,7 @@ const starFrag = /* glsl */ `
   }
 `;
 
-function Stars({ count = 9000 }) {
+function Stars({ count = lite(9000, 0.55) }) {
   const mats = useRef<(THREE.ShaderMaterial | null)[]>([]);
   const second = useRef<THREE.Points>(null);
   const geo = useMemo(() => {
@@ -163,7 +164,8 @@ type GalaxyProps = {
 };
 
 /** Logarithmic-ish spiral galaxy: arms, spin, and a dense bright core. */
-function Galaxy({ seed, position, rotation, radius, branches, inside, outside, count = 14000, speed = 0.02 }: GalaxyProps) {
+function Galaxy({ seed, position, rotation, radius, branches, inside, outside, count: full = 14000, speed = 0.02 }: GalaxyProps) {
+  const count = lite(full);
   const ref = useRef<THREE.Points>(null);
   const geo = useMemo(() => {
     const r = prng(seed);

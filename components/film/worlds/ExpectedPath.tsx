@@ -10,6 +10,7 @@
  */
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+import { lite } from "@/lib/lite";
 import * as THREE from "three";
 import { film, HORIZON_U } from "@/lib/film";
 import { prng } from "@/lib/math";
@@ -168,7 +169,7 @@ const pFrag = /* glsl */ `
 const LUT = 2048;
 
 /** Light inside the line. It rides toward the head only while you scroll, and falls in with it. */
-function Light({ count = 1400 }) {
+function Light({ count = lite(1400) }) {
   const st = useMemo(() => {
     const rand = prng(2024);
     const u = new Float32Array(count);

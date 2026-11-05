@@ -15,6 +15,7 @@
  */
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+import { lite } from "@/lib/lite";
 import * as THREE from "three";
 import { dotTexture } from "@/lib/dot";
 import { film } from "@/lib/film";
@@ -285,7 +286,7 @@ export function CareerLine() {
   const gUniforms = useMemo(() => ({ uTime: { value: 0 }, uCrisis: { value: 0 }, uReveal: { value: 0 }, uStory: { value: 0 } }), []);
 
   // Light particles riding the traced part of the line.
-  const N = 900;
+  const N = lite(900);
   const parts = useMemo(() => {
     const r = prng(91);
     const s = new Float32Array(N), sp = new Float32Array(N), off = new Float32Array(N * 3);

@@ -14,12 +14,13 @@
  */
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+import { lite } from "@/lib/lite";
 import * as THREE from "three";
 import { film } from "@/lib/film";
 import { prng } from "@/lib/math";
 
 const BOX = 46;
-const COUNT = 2600;
+const COUNT = lite(2600);
 
 const vert = /* glsl */ `
   attribute vec3 aSeed;
