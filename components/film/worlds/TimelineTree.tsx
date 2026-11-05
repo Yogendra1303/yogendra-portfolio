@@ -13,6 +13,7 @@
  */
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+import { PX, withPx } from "@/lib/px";
 import * as THREE from "three";
 import { film } from "@/lib/film";
 import { prng } from "@/lib/math";
@@ -68,7 +69,7 @@ const heroFrag = /* glsl */ `
   }
 `;
 
-const emberVert = /* glsl */ `
+const emberVert = withPx(/* glsl */ `
   attribute float aT; attribute float aSeed;
   uniform float uGrow; uniform float uTime; uniform float uOn;
   varying float vA;
@@ -79,7 +80,7 @@ const emberVert = /* glsl */ `
     gl_PointSize = (2.0 + aSeed * 3.0) * (40.0 / -mv.z);
     gl_Position = projectionMatrix * mv;
   }
-`;
+`);
 const emberFrag = /* glsl */ `
   varying float vA;
   void main() {
@@ -226,7 +227,7 @@ export function TimelineTree() {
         </mesh>
       ))}
       <points geometry={e} frustumCulled={false}>
-        <shaderMaterial ref={emberMat} vertexShader={emberVert} fragmentShader={emberFrag} uniforms={uniforms} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
+        <shaderMaterial ref={emberMat} vertexShader={emberVert} fragmentShader={emberFrag} uniforms={{ ...uniforms, uPx: PX }} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
       </points>
     </group>
   );

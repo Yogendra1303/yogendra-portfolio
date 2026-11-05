@@ -7,6 +7,7 @@
  */
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+import { PX, withPx } from "@/lib/px";
 import * as THREE from "three";
 import { dotTexture } from "@/lib/dot";
 import { film } from "@/lib/film";
@@ -25,7 +26,7 @@ function planetPos(p: Planet, t: number, out: THREE.Vector3) {
   return out;
 }
 
-const swarmVert = /* glsl */ `
+const swarmVert = withPx(/* glsl */ `
   attribute float aSize;
   uniform float uOn;
   varying float vA;
@@ -35,7 +36,7 @@ const swarmVert = /* glsl */ `
     gl_PointSize = aSize * (70.0 / -mv.z);
     gl_Position = projectionMatrix * mv;
   }
-`;
+`);
 const swarmFrag = /* glsl */ `
   uniform vec3 uColor;
   varying float vA;
@@ -157,7 +158,7 @@ export function Orbits() {
 
   return (
     <group position={ORBITS} ref={group} rotation={[0.35, 0, -0.12]}>
-      <mesh>
+      <mesh renderOrder={-1}>
         <sphereGeometry args={[1.1, 48, 48]} />
         <meshBasicMaterial ref={starMat} color={new THREE.Color(1.6, 1.5, 1.8)} transparent toneMapped={false} />
       </mesh>
@@ -173,7 +174,7 @@ export function Orbits() {
         </group>
       ))}
       <points geometry={swarm.g} frustumCulled={false}>
-        <shaderMaterial ref={swarmMat} vertexShader={swarmVert} fragmentShader={swarmFrag} uniforms={{ uOn: { value: 0 }, uColor: { value: new THREE.Color("#a9c8ff") } }} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
+        <shaderMaterial ref={swarmMat} vertexShader={swarmVert} fragmentShader={swarmFrag} uniforms={{ uPx: PX, uOn: { value: 0 }, uColor: { value: new THREE.Color("#a9c8ff") } }} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
       </points>
       <points ref={ringRef} geometry={ring}>
         <pointsMaterial map={dotTexture()} ref={ringMat} color="#cfe0ff" size={0.05} sizeAttenuation transparent depthWrite={false} blending={THREE.AdditiveBlending} />

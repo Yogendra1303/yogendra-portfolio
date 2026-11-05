@@ -16,6 +16,7 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { lite } from "@/lib/lite";
+import { PX, withPx } from "@/lib/px";
 import * as THREE from "three";
 import { dotTexture } from "@/lib/dot";
 import { film } from "@/lib/film";
@@ -119,7 +120,7 @@ const branchFrag = /* glsl */ `
   }
 `;
 
-const glintVert = /* glsl */ `
+const glintVert = withPx(/* glsl */ `
   attribute vec3 aGate;  // threshold, 0 = story gate (split) / 1 = reveal gate (rejoin), seed
   attribute vec3 aCol;
   uniform float uStory; uniform float uReveal; uniform float uTime; uniform float uCrisis;
@@ -133,7 +134,7 @@ const glintVert = /* glsl */ `
     gl_PointSize = (2.2 + uCrisis * 1.5) * on * (40.0 / -mv.z);
     gl_Position = projectionMatrix * mv;
   }
-`;
+`);
 const glintFrag = /* glsl */ `
   varying vec3 vCol; varying float vA;
   void main() {
@@ -364,7 +365,7 @@ export function CareerLine() {
         <shaderMaterial ref={bmat} vertexShader={branchVert} fragmentShader={branchFrag} uniforms={bUniforms} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
       <points ref={glints} geometry={glintGeo} frustumCulled={false}>
-        <shaderMaterial ref={gmat} vertexShader={glintVert} fragmentShader={glintFrag} uniforms={gUniforms} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
+        <shaderMaterial ref={gmat} vertexShader={glintVert} fragmentShader={glintFrag} uniforms={{ ...gUniforms, uPx: PX }} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
       </points>
       <points geometry={parts.g} frustumCulled={false}>
         <pointsMaterial map={dotTexture()} ref={pm} color="#eafff4" size={0.08} sizeAttenuation transparent depthWrite={false} blending={THREE.AdditiveBlending} />

@@ -137,10 +137,10 @@ function Say({ ctx, shot, w }: { ctx: Ctx; shot: Extract<Shot, { kind: "say" }>;
         className="relative max-w-[34ch] text-center font-serif text-[clamp(1.35rem,2.6vw,2.3rem)] italic leading-snug text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.95),0_0_2px_rgba(0,0,0,0.9)]"
         style={shot.em ? { color: c.color } : undefined}
       >
-        {shot.text}
         <Echo p={p} a={w.a} b={w.b} color={c.color} reduced={reduced}>
           {shot.text}
         </Echo>
+        <span className="relative z-[1]">{shot.text}</span>
       </p>
     </motion.div>
   );

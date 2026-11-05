@@ -175,12 +175,14 @@ export function Ghosted({ p, a, b, text, reduced, color, center }: { p: MotionVa
   const y = useMapLen(p, [a, b + span * 0.3], [0.05, 0], "em");
   return (
     <span className="relative inline-block whitespace-nowrap">
-      <Decode p={p} a={a} b={b} text={text} reduced={reduced} center={center} />
       {!reduced && (
-        <motion.span aria-hidden className="pointer-events-none absolute inset-0 sm:mix-blend-screen" style={{ opacity, x, y, color }}>
+        <motion.span aria-hidden className="pointer-events-none absolute inset-0" style={{ opacity, x, y, color }}>
           <Decode p={p} a={a + span * 0.12} b={b + span * 0.3} text={text} center={center} seed={7} />
         </motion.span>
       )}
+      <span className="relative z-[1]">
+        <Decode p={p} a={a} b={b} text={text} reduced={reduced} center={center} />
+      </span>
     </span>
   );
 }
@@ -192,7 +194,7 @@ export function Echo({ p, a, b, children, color, reduced }: { p: MotionValue<num
   const x = useMapLen(p, [a, a + w * 0.4], [-0.35, 0], "em");
   if (reduced) return null;
   return (
-    <motion.span aria-hidden className="pointer-events-none absolute inset-0 sm:mix-blend-screen" style={{ opacity, x, color }}>
+    <motion.span aria-hidden className="pointer-events-none absolute inset-0" style={{ opacity, x, color }}>
       {children}
     </motion.span>
   );

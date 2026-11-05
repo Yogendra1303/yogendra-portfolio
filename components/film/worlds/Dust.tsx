@@ -15,6 +15,7 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { lite } from "@/lib/lite";
+import { PX, withPx } from "@/lib/px";
 import * as THREE from "three";
 import { film } from "@/lib/film";
 import { prng } from "@/lib/math";
@@ -22,7 +23,7 @@ import { prng } from "@/lib/math";
 const BOX = 46;
 const COUNT = lite(2600);
 
-const vert = /* glsl */ `
+const vert = withPx(/* glsl */ `
   attribute vec3 aSeed;
   uniform vec3 uCam;
   uniform float uTime;
@@ -50,7 +51,7 @@ const vert = /* glsl */ `
     gl_PointSize = (2.0 + (1.0 - focus) * 9.0) * (0.6 + aSeed.x) * (60.0 / max(depth, 0.5)) * 0.12;
     gl_Position = projectionMatrix * mv;
   }
-`;
+`);
 const frag = /* glsl */ `
   varying float vA;
   varying float vWarm;
@@ -103,7 +104,7 @@ export function Dust() {
   });
   return (
     <points geometry={geo} frustumCulled={false}>
-      <shaderMaterial ref={mat} vertexShader={vert} fragmentShader={frag} uniforms={uniforms} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
+      <shaderMaterial ref={mat} vertexShader={vert} fragmentShader={frag} uniforms={{ ...uniforms, uPx: PX }} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }

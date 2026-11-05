@@ -87,7 +87,7 @@ function Atom() {
   });
   return (
     <group scale={0.9}>
-      <mesh>
+      <mesh renderOrder={-1}>
         <sphereGeometry args={[0.35, 32, 32]} />
         <meshBasicMaterial ref={core} color="#e8f4ff" transparent toneMapped={false} />
       </mesh>

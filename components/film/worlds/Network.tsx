@@ -6,6 +6,7 @@
  */
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+import { PX, withPx } from "@/lib/px";
 import * as THREE from "three";
 import { dotTexture } from "@/lib/dot";
 import { film } from "@/lib/film";
@@ -15,7 +16,7 @@ import { NETWORK } from "@/lib/stage";
 const CLUSTERS = 15;
 const NODES = 520;
 
-const nodeVert = /* glsl */ `
+const nodeVert = withPx(/* glsl */ `
   attribute float aOrder;
   attribute float aSize;
   uniform float uGrow;
@@ -29,7 +30,7 @@ const nodeVert = /* glsl */ `
     gl_PointSize = aSize * on * (90.0 / -mv.z);
     gl_Position = projectionMatrix * mv;
   }
-`;
+`);
 const nodeFrag = /* glsl */ `
   uniform vec3 uColor; uniform float uOn;
   varying float vA;
@@ -168,7 +169,7 @@ export function Network() {
         <shaderMaterial ref={em} vertexShader={edgeVert} fragmentShader={edgeFrag} uniforms={{ uGrow: { value: 0 }, uOn: { value: 0 }, uAlpha: { value: 0.22 }, uColor: { value: col } }} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
       </lineSegments>
       <points geometry={data.nodes}>
-        <shaderMaterial ref={nm} vertexShader={nodeVert} fragmentShader={nodeFrag} uniforms={{ uGrow: { value: 0 }, uOn: { value: 0 }, uTime: { value: 0 }, uColor: { value: col } }} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
+        <shaderMaterial ref={nm} vertexShader={nodeVert} fragmentShader={nodeFrag} uniforms={{ uPx: PX, uGrow: { value: 0 }, uOn: { value: 0 }, uTime: { value: 0 }, uColor: { value: col } }} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
       </points>
       <points geometry={packets.g}>
         <pointsMaterial map={dotTexture()} ref={pm} color="#ffffff" size={0.22} sizeAttenuation transparent depthWrite={false} blending={THREE.AdditiveBlending} />

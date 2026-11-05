@@ -6,6 +6,7 @@
  */
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
+import { PX, withPx } from "@/lib/px";
 import * as THREE from "three";
 import dots from "@/content/earth-dots.json";
 import { film } from "@/lib/film";
@@ -20,7 +21,7 @@ export function latLon(lat: number, lon: number, r: number, out = new THREE.Vect
   return out.set(Math.cos(la) * Math.sin(lo) * r, Math.sin(la) * r, Math.cos(la) * Math.cos(lo) * r);
 }
 
-const dotVert = /* glsl */ `
+const dotVert = withPx(/* glsl */ `
   uniform float uOn;
   varying float vFace;
   void main() {
@@ -30,7 +31,7 @@ const dotVert = /* glsl */ `
     gl_PointSize = (1.6 + 1.2 * max(vFace, 0.0)) * (60.0 / -mv.z) * uOn;
     gl_Position = projectionMatrix * mv;
   }
-`;
+`);
 const dotFrag = /* glsl */ `
   uniform vec3 uColor;
   uniform float uOn;
@@ -225,12 +226,12 @@ export function Earth({ position, radius, chapter, focus, cities, arcs, color = 
   return (
     <group ref={outer} position={position}>
       <group ref={spin}>
-        <mesh>
+        <mesh renderOrder={-1}>
           <sphereGeometry args={[radius * 0.985, 64, 64]} />
           <meshBasicMaterial color="#000805" transparent opacity={0.92} />
         </mesh>
         <points geometry={dotGeo}>
-          <shaderMaterial ref={dotMat} vertexShader={dotVert} fragmentShader={dotFrag} uniforms={{ uColor: { value: col }, uOn: { value: 0 } }} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
+          <shaderMaterial ref={dotMat} vertexShader={dotVert} fragmentShader={dotFrag} uniforms={{ uPx: PX, uColor: { value: col }, uOn: { value: 0 } }} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
         </points>
         <lineSegments geometry={gridGeo}>
           <lineBasicMaterial ref={gridMat} color={color} transparent depthWrite={false} blending={THREE.AdditiveBlending} />

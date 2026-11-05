@@ -13,6 +13,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { lite } from "@/lib/lite";
+import { PX, withPx } from "@/lib/px";
 import * as THREE from "three";
 import { prng } from "@/lib/math";
 import { film } from "@/lib/film";
@@ -33,7 +34,7 @@ const lensedPosition = /* glsl */ `
   }
 `;
 
-const starVert = /* glsl */ `
+const starVert = withPx(/* glsl */ `
   attribute float aSize;
   attribute float aPhase;
   attribute vec3 aColor;
@@ -49,7 +50,7 @@ const starVert = /* glsl */ `
     gl_PointSize = aSize * (300.0 / -mv.z) * sqrt(clamp(mu, 0.0, 6.0));
     gl_Position = projectionMatrix * mv;
   }
-`;
+`);
 const starFrag = /* glsl */ `
   varying vec3 vColor;
   varying float vTwinkle;
@@ -116,7 +117,7 @@ function Stars({ count = lite(9000, 0.55) }) {
             }}
             vertexShader={starVert}
             fragmentShader={starFrag}
-            uniforms={u}
+            uniforms={{ ...u, uPx: PX }}
             transparent
             depthWrite={false}
             blending={THREE.AdditiveBlending}
@@ -127,7 +128,7 @@ function Stars({ count = lite(9000, 0.55) }) {
   );
 }
 
-const galaxyVert = /* glsl */ `
+const galaxyVert = withPx(/* glsl */ `
   attribute float aSize;
   attribute vec3 aColor;
   varying vec3 vColor;
@@ -139,7 +140,7 @@ const galaxyVert = /* glsl */ `
     vColor = aColor * min(mu, 4.0);
     gl_Position = projectionMatrix * mv;
   }
-`;
+`);
 const galaxyFrag = /* glsl */ `
   varying vec3 vColor;
   uniform float uOpacity;
@@ -204,7 +205,7 @@ function Galaxy({ seed, position, rotation, radius, branches, inside, outside, c
   return (
     <group position={position} rotation={rotation}>
       <points ref={ref} geometry={geo} frustumCulled={false}>
-        <shaderMaterial vertexShader={galaxyVert} fragmentShader={galaxyFrag} uniforms={uniforms} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
+        <shaderMaterial vertexShader={galaxyVert} fragmentShader={galaxyFrag} uniforms={{ ...uniforms, uPx: PX }} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
       </points>
     </group>
   );

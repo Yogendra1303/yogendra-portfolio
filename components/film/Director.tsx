@@ -25,6 +25,7 @@ import { CHAPTERS, CUTS, cutBetween, film, HORIZON_U } from "@/lib/film";
 import { setLens } from "@/lib/lens";
 import { BH_RADIUS, BLACK_HOLE, cameraCurve, careerCurve, keyLook, ORBITS, tForU, WORMHOLE_T } from "@/lib/stage";
 import { careerReveal, colorAt } from "@/lib/timeline";
+import { PX, PX_BASE } from "@/lib/px";
 import { prng } from "@/lib/math";
 
 /** Camera spring stiffness (rad/s): mass you can feel, lag you can't. */
@@ -53,7 +54,7 @@ function readScroll() {
 }
 
 export function Director() {
-  const { camera, pointer } = useThree();
+  const { camera, pointer, gl, size } = useThree();
   const look = useMemo(() => new THREE.Vector3(), []);
   const ahead = useMemo(() => new THREE.Vector3(), []);
   const bhS = useMemo(() => new THREE.Vector3(), []);
@@ -82,6 +83,7 @@ export function Director() {
     film.clock += dt;
     film.sinceCut += dt;
     readScroll();
+    PX.value = (gl.getPixelRatio() * size.height) / PX_BASE;
     const jump = film.snap || !started.current;
 
     // Story coordinate: the worldline keeps growing through holds.

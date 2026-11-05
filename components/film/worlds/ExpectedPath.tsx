@@ -11,6 +11,7 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { lite } from "@/lib/lite";
+import { PX, withPx } from "@/lib/px";
 import * as THREE from "three";
 import { film, HORIZON_U } from "@/lib/film";
 import { prng } from "@/lib/math";
@@ -140,7 +141,7 @@ function Strands() {
   );
 }
 
-const pVert = /* glsl */ `
+const pVert = withPx(/* glsl */ `
   attribute float aSize;
   attribute float aHeat;
   attribute float aAlpha;
@@ -153,7 +154,7 @@ const pVert = /* glsl */ `
     vAlpha = aAlpha * smoothstep(1.2, 5.0, -mv.z) * (1.0 - smoothstep(80.0, 200.0, -mv.z));
     gl_Position = projectionMatrix * mv;
   }
-`;
+`);
 const pFrag = /* glsl */ `
   varying float vHeat;
   varying float vAlpha;
@@ -231,7 +232,7 @@ function Light({ count = lite(1400) }) {
 
   return (
     <points geometry={st.g} frustumCulled={false}>
-      <shaderMaterial vertexShader={pVert} fragmentShader={pFrag} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
+      <shaderMaterial vertexShader={pVert} fragmentShader={pFrag} uniforms={{ uPx: PX }} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   );
 }
