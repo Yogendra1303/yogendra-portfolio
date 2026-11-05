@@ -34,7 +34,7 @@ A browser-based cinematic sequence of a nine-year career arc. Scroll to move thr
 - **Crisis.** Shots tagged `crisis` in `content/story.ts` cut the camera in on the head of the worldline, splinter it into possible futures (most fold back in, some are pruned), bend the starlight around an unseen mass and slow time.
 - **Time dilation.** Near the black hole and in a crisis, story time slows: particles, the disk and the HUD's `τ` clock fall behind the viewer's clock `t`.
 - **Dimensions.** Shots tagged `shift` (and every chapter's first title card) change the worldline's colour, and the grade leans toward it.
-- **Cuts.** `CUTS` in `lib/film.ts` are stretches of the route the camera jumps instead of flying (the fracture). The horizon is soft: the camera flies through it, black inside, and the tunnel opens out of the dark.
+- **One shot, no cuts.** The camera flies through the horizon (black inside, the tunnel opens out of it) and through the dimensional shift (the frame fractures as it passes). Crises push in fast and release; nothing jumps.
 
 The score starts with the visitor's first click (browsers need a gesture) and then never stops; Sound turns it off. It is synthesised live (Web Audio, no recordings): a constant bed (a pad that changes chord each chapter, a shimmer, a 40 Hz floor, air), with scroll-driven risers, a braam on every title card, debris hits in turbulence and dips on every cut. With `prefers-reduced-motion` there are no cuts, shakes, flashes, fracture or flicker; the colours, branches, clocks and words carry the same story.
 
